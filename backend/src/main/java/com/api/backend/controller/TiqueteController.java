@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/tiquetes")
@@ -25,11 +26,12 @@ public class TiqueteController {
      * Genera tiquetes electrónicos para una reserva confirmada
      */
     @PostMapping("/generar")
-    public ResponseEntity<List<TiqueteDTO>> generarTiquetes(@RequestBody @Valid GenerarTiqueteRequest request) {
+    public ResponseEntity<List<?>> generarTiquetes(@RequestBody @Valid GenerarTiqueteRequest request) {
         try {
             List<TiqueteDTO> tiquetes = tiqueteService.generarTiquetes(request.getIdReserva());
             return ResponseEntity.ok(tiquetes);
         } catch (RuntimeException e) {
+            System.out.println(e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }
@@ -52,7 +54,7 @@ public class TiqueteController {
      * RF05.3 - Descargar Tiquete en PDF
      */
     @GetMapping("/{idTiquete}/pdf")
-    public ResponseEntity<byte[]> descargarTiquetePDF(@PathVariable Long idTiquete) {
+    public ResponseEntity<?> descargarTiquetePDF(@PathVariable Long idTiquete) {
         try {
             byte[] pdfContent = tiqueteService.descargarTiquetePDF(idTiquete);
             HttpHeaders headers = new HttpHeaders();
@@ -60,7 +62,7 @@ public class TiqueteController {
             headers.setContentDispositionFormData("attachment", "tiquete-" + idTiquete + ".pdf");
             return ResponseEntity.ok().headers(headers).body(pdfContent);
         } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.badRequest().body(Map.of("error: ", e.getMessage()));
         }
     }
 

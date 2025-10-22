@@ -1,5 +1,8 @@
 package com.api.backend.config.enums;
 
+import lombok.Getter;
+
+@Getter
 public enum CiudadesEnum {
     BOGOTA("Bogotá - El Dorado", "BOG"),
     MEDELLIN("Medellín - José María Córdova", "MDE"),
@@ -44,11 +47,4 @@ public enum CiudadesEnum {
         this.codigo = codigo;
     }
 
-    public String getDescripcion() {
-        return descripcion;
-    }
-
-    public String getCodigo() {
-        return codigo;
-    }
 }

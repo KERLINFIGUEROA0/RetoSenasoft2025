@@ -13,5 +13,7 @@ public interface VueloService {
 
     List<VueloDTO> listarTodos();
 
+    List<VueloDTO> listarVuelosFuturos();
+
     boolean validarFechaBusqueda(BusquedaVueloRequest request);
 }

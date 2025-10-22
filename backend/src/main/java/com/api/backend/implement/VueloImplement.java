@@ -1,13 +1,19 @@
 package com.api.backend.implement;
 
+import com.api.backend.config.VueloMapper;
 import com.api.backend.dto.BusquedaVueloRequest;
 import com.api.backend.dto.VueloDTO;
 import com.api.backend.entity.Vuelo;
 import com.api.backend.repository.VueloRepository;
 import com.api.backend.service.VueloService;
+import com.api.backend.speficication.VueloSpecification;
+import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -15,6 +21,8 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
 @Service
 public class VueloImplement implements VueloService {
 
@@ -22,30 +30,60 @@ public class VueloImplement implements VueloService {
     private VueloRepository vueloRepository;
 
     @Autowired
+    private VueloMapper vueloMapper;
+
+    @Autowired
     private ModelMapper modelMapper;
+
 
     @Override
     public List<VueloDTO> buscarVuelos(BusquedaVueloRequest request) {
-        // Validar fecha de búsqueda según requerimientos
-        if (!validarFechaBusqueda(request)) {
-            throw new IllegalArgumentException("Fecha de búsqueda inválida. Debe ser desde hoy hasta máximo 2 meses en el futuro.");
+        // Construir la especificación combinando múltiples filtros
+        Specification<Vuelo> spec = Specification.allOf(
+                VueloSpecification.conOrigen(request.getOrigen()),
+                VueloSpecification.conDestino(request.getDestino()),
+                VueloSpecification.conFechaSalida(request.getFechaSalida()),
+                VueloSpecification.vuelosFuturos());
+
+        // Aplicar filtros opcionales
+        if (request.getCantidadPasajeros() != null && request.getCantidadPasajeros() > 0) {
+            spec = spec.and(VueloSpecification.conAsientosDisponibles(request.getCantidadPasajeros()));
         }
 
-        // Convertir LocalDate a LocalDateTime para la búsqueda
-        LocalDateTime fechaInicio = request.getFechaSalida().atStartOfDay();
-        LocalDateTime fechaFin = request.getFechaSalida().atTime(LocalTime.MAX);
-        LocalDateTime ahora = LocalDateTime.now();
+        if (request.getPrecioMinimo() != null || request.getPrecioMaximo() != null) {
+            spec = spec.and(VueloSpecification.conRangoPrecios(
+                    request.getPrecioMinimo(),
+                    request.getPrecioMaximo()
+            ));
+        }
 
-        List<Vuelo> vuelos = vueloRepository.findVuelosDisponibles(
-            request.getOrigen(),
-            request.getDestino(),
-            fechaInicio,
-            ahora
-        );
+        // Aplicar ordenamiento
+        if (request.getOrdenarPor() != null) {
+            switch (request.getOrdenarPor().toLowerCase()) {
+                case "precio_asc":
+                    spec = spec.and(VueloSpecification.ordenarPorPrecioAsc());
+                    break;
+                case "precio_desc":
+                    spec = spec.and(VueloSpecification.ordenarPorPrecioDesc());
+                    break;
+                case "duracion":
+                    spec = spec.and(VueloSpecification.ordenarPorDuracion());
+                    break;
+                case "fecha":
+                default:
+                    spec = spec.and(VueloSpecification.ordenarPorFechaSalida());
+                    break;
+            }
+        } else {
+            // Ordenamiento por defecto: por fecha de salida
+            spec = spec.and(VueloSpecification.ordenarPorFechaSalida());
+        }
+
+        List<Vuelo> vuelos = vueloRepository.findAll(spec);
 
         return vuelos.stream()
-            .map(this::convertirAVueloDTO)
-            .collect(Collectors.toList());
+                .map(vueloMapper::toDTO)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -58,8 +96,18 @@ public class VueloImplement implements VueloService {
     @Override
     public List<VueloDTO> listarTodos() {
         return vueloRepository.findAll().stream()
-            .map(this::convertirAVueloDTO)
-            .collect(Collectors.toList());
+                .map(vueloMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<VueloDTO> listarVuelosFuturos() {
+        Specification<Vuelo> spec = VueloSpecification.vuelosFuturos()
+                .and(VueloSpecification.ordenarPorFechaSalida());
+
+        return vueloRepository.findAll(spec).stream()
+                .map(vueloMapper::toDTO)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -74,12 +122,6 @@ public class VueloImplement implements VueloService {
 
     private VueloDTO convertirAVueloDTO(Vuelo vuelo) {
         VueloDTO dto = modelMapper.map(vuelo, VueloDTO.class);
-
-        // Agregar información del avión
-        if (vuelo.getAvion() != null) {
-            dto.setModeloAvion(vuelo.getAvion().getModelo());
-            dto.setCapacidadAvion(vuelo.getAvion().getCapacidad());
-        }
 
         // Calcular asientos disponibles
         Long asientosDisponibles = vueloRepository.countAsientosDisponiblesByVuelo(vuelo.getIdVuelo());
