@@ -17,13 +17,20 @@ import com.lowagie.text.pdf.PdfWriter;
 import com.lowagie.text.pdf.draw.LineSeparator;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.datetime.DateFormatter;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.awt.*;
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
+import java.text.NumberFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -134,12 +141,25 @@ public class TiqueteImplement implements TiqueteService {
             tablaVuelo.setWidthPercentage(100);
             tablaVuelo.setSpacingAfter(20);
 
+            LocalDateTime fechaSalida = tiquete.getVuelo().getFechaSalida();
+            Locale localeColombia = new Locale("es", "CO");
+
+            DateTimeFormatter formatterFecha = DateTimeFormatter.ofPattern("EEEE d 'de' MMMM 'de' yyyy", localeColombia);
+            String fechaFormateada = fechaSalida.format(formatterFecha);
+
+            DateTimeFormatter formatterHora = DateTimeFormatter.ofPattern("hh:mm a", localeColombia);
+            String horaFormateada = fechaSalida.format(formatterHora);
+
+            NumberFormat formatoMoneda = NumberFormat.getCurrencyInstance(localeColombia);
+            String precioFormateado = formatoMoneda.format(tiquete.getVuelo().getPrecio().longValue());
+
             addRow(tablaVuelo, "Vuelo:", tiquete.getCodigoReserva(), textoFont);
             addRow(tablaVuelo, "Origen:", tiquete.getVuelo().getOrigen().toString(), textoFont);
             addRow(tablaVuelo, "Destino:", tiquete.getVuelo().getDestino().toString(), textoFont);
-            addRow(tablaVuelo, "Fecha de salida:", tiquete.getVuelo().getFechaSalida().toString(), textoFont);
+            addRow(tablaVuelo, "Fecha de salida:", fechaFormateada, textoFont);
+            addRow(tablaVuelo, "Hora de salida:", horaFormateada, textoFont);
             addRow(tablaVuelo, "Asiento:", tiquete.getAsientoVuelo().getAsiento().getNombre(), textoFont);
-            addRow(tablaVuelo, "Precio:", "$" + tiquete.getVuelo().getPrecio(), textoFont);
+            addRow(tablaVuelo, "Precio:", precioFormateado, textoFont);
             document.add(tablaVuelo);
 
             // ----- PIE DE PÁGINA -----
