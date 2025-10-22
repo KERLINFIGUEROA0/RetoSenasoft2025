@@ -9,11 +9,19 @@ import com.api.backend.repository.ReservaRepository;
 import com.api.backend.repository.TiqueteRepository;
 import com.api.backend.service.TiqueteService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lowagie.text.*;
+import com.lowagie.text.Font;
+import com.lowagie.text.pdf.PdfPCell;
+import com.lowagie.text.pdf.PdfPTable;
+import com.lowagie.text.pdf.PdfWriter;
+import com.lowagie.text.pdf.draw.LineSeparator;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.awt.*;
+import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
@@ -80,9 +88,92 @@ public class TiqueteImplement implements TiqueteService {
 
     @Override
     public byte[] descargarTiquetePDF(Long idTiquete) {
-        // En una implementación real, aquí se generaría el PDF
-        // Por ahora, retornamos un array vacío
-        return new byte[0];
+        Tiquete tiquete = tiqueteRepository.findById(idTiquete)
+                .orElseThrow(() -> new RuntimeException("Tiquete no encontrado"));
+
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            // Documento con márgenes amplios
+            Document document = new Document(PageSize.A4, 50, 50, 60, 50);
+            PdfWriter.getInstance(document, baos);
+            document.open();
+
+            // ----- ENCABEZADO -----
+            Font tituloFont = new Font(Font.HELVETICA, 22, Font.BOLD, new Color(40, 90, 200));
+            Paragraph titulo = new Paragraph("TIQUETE AÉREO DIGITAL", tituloFont);
+            titulo.setAlignment(Element.ALIGN_CENTER);
+            document.add(titulo);
+
+            document.add(new Paragraph(" "));
+            LineSeparator linea = new LineSeparator();
+            linea.setLineColor(new Color(40, 90, 200));
+            document.add(linea);
+            document.add(new Paragraph(" "));
+
+            // ----- DATOS DEL PASAJERO Y VUELO -----
+            Font seccionFont = new Font(Font.HELVETICA, 14, Font.BOLD, new Color(30, 30, 30));
+            Font textoFont = new Font(Font.HELVETICA, 12, Font.NORMAL, Color.DARK_GRAY);
+
+            Paragraph seccion1 = new Paragraph("Datos del pasajero", seccionFont);
+            seccion1.setSpacingAfter(8);
+            document.add(seccion1);
+
+            PdfPTable tablaPasajero = new PdfPTable(2);
+            tablaPasajero.setWidthPercentage(100);
+            tablaPasajero.setSpacingAfter(15);
+
+            addRow(tablaPasajero, "Nombre:", tiquete.getPasajero().getNombres(), textoFont);
+            addRow(tablaPasajero, "Documento:", tiquete.getPasajero().getNumeroDocumento(), textoFont);
+            addRow(tablaPasajero, "Correo:", tiquete.getPasajero().getEmail(), textoFont);
+            document.add(tablaPasajero);
+
+            Paragraph seccion2 = new Paragraph("Detalles del vuelo", seccionFont);
+            seccion2.setSpacingAfter(8);
+            document.add(seccion2);
+
+            PdfPTable tablaVuelo = new PdfPTable(2);
+            tablaVuelo.setWidthPercentage(100);
+            tablaVuelo.setSpacingAfter(20);
+
+            addRow(tablaVuelo, "Vuelo:", tiquete.getCodigoReserva(), textoFont);
+            addRow(tablaVuelo, "Origen:", tiquete.getVuelo().getOrigen().toString(), textoFont);
+            addRow(tablaVuelo, "Destino:", tiquete.getVuelo().getDestino().toString(), textoFont);
+            addRow(tablaVuelo, "Fecha de salida:", tiquete.getVuelo().getFechaSalida().toString(), textoFont);
+            addRow(tablaVuelo, "Asiento:", tiquete.getAsientoVuelo().getAsiento().getNombre(), textoFont);
+            addRow(tablaVuelo, "Precio:", "$" + tiquete.getVuelo().getPrecio(), textoFont);
+            document.add(tablaVuelo);
+
+            // ----- PIE DE PÁGINA -----
+            document.add(new Paragraph(" "));
+            LineSeparator lineaFinal = new LineSeparator();
+            lineaFinal.setLineColor(Color.LIGHT_GRAY);
+            document.add(lineaFinal);
+
+            Paragraph agradecimiento = new Paragraph(
+                    "Gracias por viajar con nosotros \nAerolínea AirFly 2025",
+                    new Font(Font.HELVETICA, 12, Font.ITALIC, new Color(80, 80, 80))
+            );
+            agradecimiento.setAlignment(Element.ALIGN_CENTER);
+            agradecimiento.setSpacingBefore(10);
+            document.add(agradecimiento);
+
+            document.close();
+            return baos.toByteArray();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error generando el PDF: " + e.getMessage(), e);
+        }
+    }
+
+    private void addRow(PdfPTable table, String label, String value, Font font) {
+        PdfPCell c1 = new PdfPCell(new Phrase(label, new Font(Font.HELVETICA, 12, Font.BOLD)));
+        PdfPCell c2 = new PdfPCell(new Phrase(value != null ? value : "-", font));
+
+        c1.setBackgroundColor(new Color(240, 240, 255));
+        c1.setBorderColor(Color.WHITE);
+        c2.setBorderColor(Color.WHITE);
+
+        table.addCell(c1);
+        table.addCell(c2);
     }
 
     @Override
