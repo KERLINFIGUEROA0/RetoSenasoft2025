@@ -1,44 +1,39 @@
 import Seat from './Seat';
 
 const SeatMap = ({ asientos, asientosSeleccionados, onSeatSelect, capacidadAvion }) => {
-  
+
   // Definimos las columnas como en la imagen
   const COLUMNAS = ['A', 'B', 'C', 'D', 'E', 'F'];
   const ASIENTOS_POR_FILA = 6;
+  // Calcular filas dinámicamente basado en la capacidad real del avión
   const NUMERO_FILAS = Math.ceil(capacidadAvion / ASIENTOS_POR_FILA);
 
   /**
    * Obtiene los datos del asiento (de la lista plana) basándose en la fila y columna.
-   * También genera el nombre visual (ej. "C28").
+   * Usa el nombreAsiento del backend que ya viene en formato "1A", "2B", etc.
    */
   const getAsientoData = (fila, columnaLetra) => {
-    const columnaIndex = COLUMNAS.indexOf(columnaLetra); // 0-5
-    // Calculamos el número de asiento (1-180)
-    const numeroAsiento = (fila - 1) * ASIENTOS_POR_FILA + columnaIndex + 1;
+    // El nombre visual esperado (ej. "1A", "2B")
+    const nombreAsientoVisual = `${fila}${columnaLetra}`;
 
-    // Si el asiento no existe (ej. avión de 178, el 179F no existe)
-    if (numeroAsiento > capacidadAvion) {
-      return { numeroAsiento: null, disponible: false, invisible: true };
-    }
+    // Buscar el asiento por su nombre visual exacto
+    const asientoData = asientos.find(a => a.nombreVisual === nombreAsientoVisual);
 
-    // Formato "C28" (Letra + Fila)
-    const nombreAsientoVisual = `${columnaLetra}${fila}`;
-    const asientoData = asientos.find(a => a.numeroAsiento === numeroAsiento);
-
-    // Si no se encuentra en la data (debería, pero por si acaso)
+    // Si no se encuentra en la data del backend
     if (!asientoData) {
       return {
-        numeroAsiento,
+        numeroAsiento: null,
         nombreVisual: nombreAsientoVisual,
         disponible: false, // Asumir ocupado si no está en la lista de disponibles
         idAsientoVuelo: null,
+        invisible: false
       };
     }
 
-    // Devolvemos el asiento con su nombre visual
+    // Devolvemos el asiento con sus datos del backend
     return {
       ...asientoData,
-      nombreVisual: nombreAsientoVisual,
+      invisible: false
     };
   };
 
@@ -48,7 +43,7 @@ const SeatMap = ({ asientos, asientosSeleccionados, onSeatSelect, capacidadAvion
       <div className="text-center mb-6">
         <h2 className="text-xl font-semibold text-gray-800 mb-2">Selecciona tus asientos</h2>
         <p className="text-sm text-gray-600">
-          Avión {capacidadAvion} asientos - Máximo 5 asientos por reserva
+          Avión con capacidad de {capacidadAvion} asientos - {NUMERO_FILAS} filas - Máximo 5 asientos por reserva
         </p>
       </div>
 

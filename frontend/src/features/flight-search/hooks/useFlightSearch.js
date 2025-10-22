@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { API_BASE_URL, mockVuelos } from '../../../utils/constants';
+import axios from 'axios';
+import { API_BASE_URL } from '../../../utils/constants';
 
 export const useFlightSearch = () => {
   const [vuelos, setVuelos] = useState([]);
@@ -31,39 +32,70 @@ export const useFlightSearch = () => {
       console.log('Vuelos filtrados:', vuelosFiltrados);
       setVuelos(vuelosFiltrados);
 
-      // Intentar conexión real con backend (comentado por ahora)
-      /*
-      const requestData = {
-        origen: formData.origen.split(' - ')[0],
-        destino: formData.destino.split(' - ')[0],
-        fechaSalida: formData.fechaSalida,
-        fechaRegreso: formData.tipoViaje === 'IDA_VUELTA' ? formData.fechaRegreso : null,
-        cantidadPasajeros: formData.adultos + formData.infantes,
-        tipoViaje: formData.tipoViaje
+      // Conexión real con backend usando Axios
+      // Mapear nombres de ciudades a enum del backend
+      const mapearCiudad = (ciudadInput) => {
+        const ciudadLimpia = ciudadInput.split(' - ')[0]?.toLowerCase().trim();
+
+        const mapeoCiudades = {
+          'bogotá': 'BOGOTA',
+          'medellín': 'MEDELLIN',
+          'rionegro': 'RIONEGRO',
+          'cali': 'CALI',
+          'cartagena': 'CARTAGENA',
+          'barranquilla': 'BARRANQUILLA',
+          'santa marta': 'SANTA_MARTA',
+          'pereira': 'PEREIRA',
+          'manizales': 'MANIZALES',
+          'armenia': 'ARMENIA',
+          'bucaramanga': 'BUCARAMANGA',
+          'cúcuta': 'CUCUTA',
+          'neiva': 'NEIVA',
+          'ibagué': 'IBAGUE',
+          'montería': 'MONTERIA',
+          'pasto': 'PASTO',
+          'popayán': 'POPAYAN',
+          'valledupar': 'VALLEDUPAR',
+          'riohacha': 'RIOHACHA',
+          'leticia': 'LETICIA',
+          'san andrés': 'SAN_ANDRES',
+          'yopal': 'YOPAL',
+          'tunja': 'TUNJA',
+          'villavicencio': 'VILLAVICENCIO',
+          'florencia': 'FLORENCIA',
+          'quibdó': 'QUIBDO',
+          'mitú': 'MITU',
+          'mocoa': 'MOCOA',
+          'puerto carreño': 'PUERTO_CARREÑO',
+          'arauca': 'ARAUCA'
+        };
+
+        return mapeoCiudades[ciudadLimpia] || ciudadLimpia.toUpperCase().replace(/\s+/g, '_');
       };
 
-      const response = await fetch(`${API_BASE_URL}/vuelos/buscar`, {
-        method: 'POST',
+      const requestData = {
+        origen: mapearCiudad(formData.origen),
+        destino: mapearCiudad(formData.destino),
+        fechaSalida: formData.fechaSalida,
+        cantidadPasajeros: formData.adultos + formData.infantes
+      };
+
+      const response = await axios.post(`${API_BASE_URL}/vuelos/`, requestData, {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        mode: 'cors',
-        body: JSON.stringify(requestData)
+        withCredentials: true
       });
 
-      if (!response.ok) {
-        throw new Error('Error al buscar vuelos');
-      }
-
-      const data = await response.json();
-      setVuelos(data);
-      */
+      // Usar datos del backend en lugar de mock
+      setVuelos(response.data);
+      console.log('Vuelos del backend:', response.data);
     } catch (err) {
-      setError('Error al buscar vuelos. Usando datos de demostración.');
+      setError('Error al buscar vuelos. Verifica la conexión con el servidor.');
       console.error(err);
-      // Fallback a datos mock
-      setVuelos(mockVuelos.slice(0, 2));
+      // Sin fallback a datos mock - mostrar error
+      setVuelos([]);
     } finally {
       setBuscando(false);
     }

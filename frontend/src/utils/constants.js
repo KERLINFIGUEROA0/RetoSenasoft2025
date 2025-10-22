@@ -1,5 +1,5 @@
 // Constantes de la aplicación
-export const API_BASE_URL = 'http://localhost:8080/api';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
 
 // Enum de ciudades basado en el backend
 export const CIUDADES = [
@@ -35,65 +35,4 @@ export const CIUDADES = [
   { nombre: 'Arauca - Santiago Pérez Quiroz', codigo: 'AUC' }
 ];
 
-// Datos mock para simular respuesta del backend
-export const mockVuelos = [
-  {
-    idVuelo: 1,
-    origen: { nombre: 'Bogotá', codigo: 'BOG' },
-    destino: { nombre: 'Pereira', codigo: 'PEI' },
-    fechaSalida: '2025-10-25T08:00:00',
-    fechaLlegada: '2025-10-25T10:30:00',
-    precio: 150000,
-    modeloAvion: 'Boeing 737',
-    capacidadAvion: 150,
-    asientosDisponibles: 75
-  },
-  {
-    idVuelo: 2,
-    origen: { nombre: 'Bogotá', codigo: 'BOG' },
-    destino: { nombre: 'Pereira', codigo: 'PEI' },
-    fechaSalida: '2025-10-25T14:00:00',
-    fechaLlegada: '2025-10-25T16:30:00',
-    precio: 180000,
-    modeloAvion: 'Airbus A320',
-    capacidadAvion: 180,
-    asientosDisponibles: 90
-  },
-  {
-    idVuelo: 3,
-    origen: { nombre: 'Bogotá', codigo: 'BOG' },
-    destino: { nombre: 'Cali', codigo: 'CLO' },
-    fechaSalida: '2025-10-25T09:00:00',
-    fechaLlegada: '2025-10-25T10:15:00',
-    precio: 120000,
-    modeloAvion: 'Boeing 737',
-    capacidadAvion: 150,
-    asientosDisponibles: 60
-  }
-];
-
-// Función para generar asientos mock disponibles
-export const generarAsientosMock = (vueloId, capacidadAvion, asientosDisponibles) => {
-  const asientos = [];
-  let asientosGenerados = 0;
-
-  // Generar asientos disponibles (al menos 5 para pruebas)
-  const minAsientosDisponibles = Math.max(5, Math.floor(asientosDisponibles * 0.8));
-
-  for (let numeroAsiento = 1; numeroAsiento <= capacidadAvion && asientosGenerados < minAsientosDisponibles; numeroAsiento++) {
-    // Hacer disponibles al menos los primeros 5 asientos de cada fila para pruebas
-    const disponible = numeroAsiento <= minAsientosDisponibles ||
-                      (numeroAsiento % 6 === 1 || numeroAsiento % 6 === 2 || numeroAsiento % 6 === 3);
-
-    asientos.push({
-      idAsientoVuelo: `${vueloId}-${numeroAsiento}`,
-      numeroAsiento: numeroAsiento,
-      disponible: disponible,
-      precio: disponible ? mockVuelos.find(v => v.idVuelo === vueloId)?.precio || 150000 : null
-    });
-
-    if (disponible) asientosGenerados++;
-  }
-
-  return asientos;
-};
+// Eliminados datos mock - ahora todo se obtiene del backend

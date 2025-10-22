@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import Header from '../layout/Header/Header';
 import SearchForm from '../features/flight-search/components/SearchForm/SearchForm';
 import FlightResults from '../features/flight-search/components/FlightResults/FlightResults';
 import { useFlightSearch } from '../features/flight-search/hooks/useFlightSearch';
+import { API_BASE_URL } from '../utils/constants';
 
 function HomePage() {
   const navigate = useNavigate();
@@ -11,52 +13,32 @@ function HomePage() {
   const [upcomingFlights, setUpcomingFlights] = useState([]);
   const [showUpcoming, setShowUpcoming] = useState(true);
 
-  // Cargar vuelos próximos al montar el componente
+  // Cargar vuelos próximos desde el backend
   useEffect(() => {
     const loadUpcomingFlights = async () => {
       try {
-        // Simular carga de vuelos próximos (puedes reemplazar con llamada real a API)
-        const mockUpcomingFlights = [
-          {
-            idVuelo: 1,
-            origen: 'Bogotá',
-            destino: 'Medellín',
-            fecha: '2025-01-15',
-            hora: '08:00',
-            precio: 180000,
-            asientosDisponibles: 45
-          },
-          {
-            idVuelo: 2,
-            origen: 'Bogotá',
-            destino: 'Cali',
-            fecha: '2025-01-15',
-            hora: '10:30',
-            precio: 220000,
-            asientosDisponibles: 32
-          },
-          {
-            idVuelo: 3,
-            origen: 'Medellín',
-            destino: 'Bogotá',
-            fecha: '2025-01-15',
-            hora: '14:15',
-            precio: 180000,
-            asientosDisponibles: 28
-          },
-          {
-            idVuelo: 4,
-            origen: 'Bogotá',
-            destino: 'Cartagena',
-            fecha: '2025-01-16',
-            hora: '09:00',
-            precio: 350000,
-            asientosDisponibles: 52
-          }
-        ];
-        setUpcomingFlights(mockUpcomingFlights);
+        // Obtener vuelos próximos desde el backend usando Axios
+        const today = new Date().toISOString().split('T')[0];
+        const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+        try {
+          const response = await axios.get(`${API_BASE_URL}/vuelos/disponibles`, {
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            withCredentials: true
+          });
+
+          // Tomar solo los primeros 8 vuelos para mostrar
+          setUpcomingFlights(response.data.slice(0, 8));
+        } catch (error) {
+          console.warn('No se pudieron cargar vuelos próximos:', error);
+          setUpcomingFlights([]);
+        }
       } catch (error) {
         console.error('Error cargando vuelos próximos:', error);
+        setUpcomingFlights([]);
       }
     };
 
@@ -83,7 +65,7 @@ function HomePage() {
   };
 
   const handleUpcomingFlightSelect = (vuelo) => {
-    // Para vuelos próximos, navegar directamente con datos mock
+    // Para vuelos próximos, navegar directamente con datos del backend
     localStorage.setItem('selectedFlight', JSON.stringify(vuelo));
     navigate(`/seats/${vuelo.idVuelo}`);
   };

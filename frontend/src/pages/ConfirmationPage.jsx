@@ -1,17 +1,38 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import axios from 'axios';
 import Header from '../layout/Header/Header';
+import { API_BASE_URL } from '../utils/constants';
 
 const ConfirmationPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { selectedSeats, passengers } = location.state || {};
+  const { selectedSeats, passengers, reservaId, tiquetes, pago } = location.state || {};
   const [bookingCode, setBookingCode] = useState('');
+  const [confirmacionData, setConfirmacionData] = useState(null);
 
   useEffect(() => {
-    // Generar código de reserva único
-    const code = 'AF' + Math.random().toString(36).substr(2, 6).toUpperCase();
-    setBookingCode(code);
+    const cargarConfirmacion = async () => {
+      try {
+        if (reservaId) {
+          // Obtener confirmación desde el backend
+          const response = await axios.get(`${API_BASE_URL}/tiquetes/confirmacion/${reservaId}`);
+          setConfirmacionData(response.data);
+          setBookingCode(response.data.codigoReserva);
+        } else {
+          // Fallback si no hay reservaId
+          const code = 'AF' + Math.random().toString(36).substr(2, 6).toUpperCase();
+          setBookingCode(code);
+        }
+      } catch (error) {
+        console.error('Error cargando confirmación:', error);
+        // Fallback
+        const code = 'AF' + Math.random().toString(36).substr(2, 6).toUpperCase();
+        setBookingCode(code);
+      }
+    };
+
+    cargarConfirmacion();
 
     // Limpiar localStorage después de mostrar confirmación
     setTimeout(() => {
@@ -19,11 +40,56 @@ const ConfirmationPage = () => {
       localStorage.removeItem('selectedSeats');
       localStorage.removeItem('searchPassengers');
       localStorage.removeItem('passengerRegistration');
+      localStorage.removeItem('reservaId');
     }, 5000);
-  }, []);
+  }, [reservaId]);
 
-  const handlePrintTickets = () => {
-    window.print();
+  const handleDownloadPDF = async () => {
+    try {
+      if (confirmacionData?.tiquetes?.length > 0) {
+        // Descargar PDF del primer tiquete
+        const response = await axios.get(`${API_BASE_URL}/tiquetes/${confirmacionData.tiquetes[0].idTiquete}/pdf`, {
+          responseType: 'blob'
+        });
+
+        // Crear enlace de descarga
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `tiquete-${bookingCode}.pdf`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error('Error descargando PDF:', error);
+      alert('Error al descargar el PDF. Inténtalo de nuevo.');
+    }
+  };
+
+  const handleDownloadJSON = async () => {
+    try {
+      if (confirmacionData?.tiquetes?.length > 0) {
+        // Descargar JSON del primer tiquete
+        const response = await axios.get(`${API_BASE_URL}/tiquetes/${confirmacionData.tiquetes[0].idTiquete}/json`, {
+          responseType: 'blob'
+        });
+
+        // Crear enlace de descarga
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `tiquete-${bookingCode}.json`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error('Error descargando JSON:', error);
+      alert('Error al descargar el JSON. Inténtalo de nuevo.');
+    }
   };
 
   const handleNewBooking = () => {
@@ -132,13 +198,23 @@ const ConfirmationPage = () => {
           {/* Botones de acción */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={handlePrintTickets}
+              onClick={handleDownloadPDF}
               className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
               </svg>
-              Imprimir Tiquetes
+              Descargar PDF
+            </button>
+
+            <button
+              onClick={handleDownloadJSON}
+              className="bg-purple-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+              </svg>
+              Descargar JSON
             </button>
 
             <button

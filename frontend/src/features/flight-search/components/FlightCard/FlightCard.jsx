@@ -10,7 +10,7 @@ const FlightCard = ({ vuelo, onSelect }) => {
               {formatHora(vuelo.fechaSalida)} - {formatHora(vuelo.fechaLlegada)}
             </div>
             <div className="text-sm text-gray-600">
-              {vuelo.origen?.codigo} → {vuelo.destino?.codigo}
+              {vuelo.origen} → {vuelo.destino}
             </div>
           </div>
           <div className="text-sm text-gray-600">

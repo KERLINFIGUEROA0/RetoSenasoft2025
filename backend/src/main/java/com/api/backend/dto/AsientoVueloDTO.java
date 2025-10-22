@@ -9,4 +9,8 @@ public class AsientoVueloDTO {
 
     private boolean disponible;
 
+    private String nombreAsiento;
+
+    private Long idAsiento;
+
 }

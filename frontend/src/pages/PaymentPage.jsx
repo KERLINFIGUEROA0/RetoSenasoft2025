@@ -1,18 +1,69 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import axios from 'axios';
 import Header from '../layout/Header/Header';
 import PaymentForm from '../features/payment/components/PaymentForm/PaymentForm';
+import { API_BASE_URL } from '../utils/constants';
 
 const PaymentPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { selectedSeats, passengers } = location.state || {};
+  const { selectedSeats, passengers, reservaId } = location.state || {};
 
-  const handlePaymentSuccess = () => {
-    // Aquí iría la lógica para procesar el pago
-    navigate('/confirmation', {
-      state: { selectedSeats, passengers }
-    });
+  const handlePaymentSuccess = async () => {
+    try {
+      // Obtener reservaId del localStorage si no viene en state
+      const idReserva = reservaId || localStorage.getItem('reservaId');
+
+      if (!idReserva) {
+        alert('Error: No se encontró la reserva. Inténtalo de nuevo.');
+        return;
+      }
+
+      // Preparar datos del pago
+      const paymentData = {
+        idReserva: parseInt(idReserva),
+        metodoPago: 'TARJETA_CREDITO', // Por defecto, se puede cambiar según el formulario
+        nombrePagador: 'Usuario de Prueba', // Esto debería venir del formulario
+        tipoDocumentoPagador: 'CC',
+        numeroDocumentoPagador: '123456789',
+        correoPagador: 'usuario@email.com',
+        telefonoPagador: '3001234567',
+        aceptaTerminos: true
+      };
+
+      // Enviar pago al backend
+      const response = await axios.post(`${API_BASE_URL}/pagos/simular`, paymentData, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        withCredentials: true
+      });
+
+      if (response.data.exitoso) {
+        // Generar tiquetes después del pago exitoso
+        const tiquetesResponse = await axios.post(`${API_BASE_URL}/tiquetes/generar`, {
+          idReserva: parseInt(idReserva)
+        });
+
+        // Navegar a confirmación con datos completos
+        navigate('/confirmation', {
+          state: {
+            selectedSeats,
+            passengers,
+            reservaId: idReserva,
+            tiquetes: tiquetesResponse.data,
+            pago: response.data
+          }
+        });
+      } else {
+        alert('Error en el pago: ' + response.data.mensaje);
+      }
+    } catch (error) {
+      console.error('Error en el pago:', error);
+      alert('Error al procesar el pago. Inténtalo de nuevo.');
+    }
   };
 
   const handleBack = () => {

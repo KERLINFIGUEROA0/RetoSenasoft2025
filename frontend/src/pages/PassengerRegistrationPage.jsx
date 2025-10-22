@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import Header from '../layout/Header/Header';
 import PassengerForm from '../features/passenger-registration/components/PassengerForm/PassengerForm';
 import { API_BASE_URL } from '../utils/constants';
@@ -140,7 +141,7 @@ const PassengerRegistrationPage = () => {
     setError('');
 
     try {
-      // ... (Preparar datos y enviar al backend (líneas 123-157)) ...
+      // Preparar datos para enviar al backend
       const registroData = {
         idVuelo: vueloSeleccionado.idVuelo,
         pasajeros: pasajeros.map(pasajero => ({
@@ -158,17 +159,24 @@ const PassengerRegistrationPage = () => {
         asientosSeleccionados: asientosSeleccionados.map(asiento => asiento.idAsientoVuelo)
       };
 
-      // ... (fetch y navegación) ...
-      
-      // Simulación (si el backend no está listo)
-      console.log('Enviando al backend:', registroData);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      localStorage.setItem('passengerRegistration', JSON.stringify(registroData));
+      // Enviar al backend usando Axios
+      const response = await axios.post(`${API_BASE_URL}/pasajeros/registrar`, registroData, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        withCredentials: true
+      });
+
+      // Guardar respuesta del backend
+      localStorage.setItem('passengerRegistration', JSON.stringify(response.data));
+      localStorage.setItem('reservaId', response.data.idReserva);
+
       navigate('/payment', {
         state: {
           selectedSeats: asientosSeleccionados,
-          passengers: pasajeros
+          passengers: response.data.pasajeros,
+          reservaId: response.data.idReserva
         }
       });
 

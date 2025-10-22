@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import Header from '../layout/Header/Header';
 import SeatMap from '../features/flight-search/components/SeatMap/SeatMap';
 import { API_BASE_URL } from '../utils/constants';
@@ -31,15 +32,18 @@ const SeatSelectionPage = () => {
       setLoading(true);
 
       // Cargar información del vuelo
-      const vueloResponse = await fetch(`${API_BASE_URL}/vuelos/${vueloId}`);
-      if (!vueloResponse.ok) throw new Error('Error al cargar vuelo');
-      const vueloData = await vueloResponse.json();
-      setVuelo(vueloData);
+      const vueloResponse = await axios.get(`${API_BASE_URL}/vuelos/${vueloId}`);
+      setVuelo(vueloResponse.data);
 
-      // Cargar asientos disponibles con datos mock mejorados
-      const { generarAsientosMock } = await import('../utils/constants');
-      const asientosData = generarAsientosMock(vueloId, vueloData.capacidadAvion, vueloData.asientosDisponibles);
-      setAsientos(asientosData);
+      // Cargar asientos disponibles desde el backend
+      const asientosResponse = await axios.get(`${API_BASE_URL}/vuelos/${vueloId}/asientos`);
+      setAsientos(asientosResponse.data.map(asiento => ({
+        idAsientoVuelo: asiento.idAsientoVuelo,
+        numeroAsiento: asiento.idAsiento,
+        disponible: asiento.disponible,
+        nombreVisual: asiento.nombreAsiento,
+        invisible: false // Asegurar que no sea invisible
+      })));
 
     } catch (err) {
       setError('Error al cargar los datos del vuelo');
