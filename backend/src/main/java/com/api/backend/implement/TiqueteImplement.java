@@ -11,28 +11,27 @@ import com.api.backend.service.TiqueteService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lowagie.text.*;
 import com.lowagie.text.Font;
+import com.lowagie.text.Image;
+import com.lowagie.text.Rectangle;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
 import com.lowagie.text.pdf.draw.LineSeparator;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.format.datetime.DateFormatter;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.awt.*;
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
 
 @Service
 public class TiqueteImplement implements TiqueteService {
@@ -54,12 +53,6 @@ public class TiqueteImplement implements TiqueteService {
     public List<TiqueteDTO> generarTiquetes(Long idReserva) {
         Reserva reserva = reservaRepository.findById(idReserva)
             .orElseThrow(() -> new RuntimeException("Reserva no encontrada"));
-
-        // Generar código único para la reserva si no tiene
-        if (reserva.getCodigoReserva() == null) {
-            reserva.setCodigoReserva(generarCodigoReservaUnico());
-            reservaRepository.save(reserva);
-        }
 
         // Generar tiquetes para cada pasajero
         List<Tiquete> tiquetes = reserva.getPasajeros().stream()
@@ -94,9 +87,9 @@ public class TiqueteImplement implements TiqueteService {
     }
 
     @Override
-    public byte[] descargarTiquetePDF(Long idTiquete) {
-        Tiquete tiquete = tiqueteRepository.findById(idTiquete)
-                .orElseThrow(() -> new RuntimeException("Tiquete no encontrado"));
+    public byte[] descargarTiquetePDF(Long idReserva) {
+         com.api.backend.entity.Reserva reserva = reservaRepository.findById(idReserva)
+                .orElseThrow(() -> new RuntimeException("Reserva no encontrada"));
 
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             // Documento con márgenes amplios
@@ -106,7 +99,7 @@ public class TiqueteImplement implements TiqueteService {
 
             // ----- ENCABEZADO -----
             Font tituloFont = new Font(Font.HELVETICA, 22, Font.BOLD, new Color(40, 90, 200));
-            Paragraph titulo = new Paragraph("TIQUETE AÉREO DIGITAL", tituloFont);
+            Paragraph titulo = new Paragraph("RESUMEN DE LA RESERVA", tituloFont);
             titulo.setAlignment(Element.ALIGN_CENTER);
             document.add(titulo);
 
@@ -117,50 +110,52 @@ public class TiqueteImplement implements TiqueteService {
             document.add(new Paragraph(" "));
 
             // ----- DATOS DEL PASAJERO Y VUELO -----
-            Font seccionFont = new Font(Font.HELVETICA, 14, Font.BOLD, new Color(30, 30, 30));
-            Font textoFont = new Font(Font.HELVETICA, 12, Font.NORMAL, Color.DARK_GRAY);
+            for (Pasajero pasajero : reserva.getPasajeros()) {
+                Font seccionFont = new Font(Font.HELVETICA, 14, Font.BOLD, new Color(30, 30, 30));
+                Font textoFont = new Font(Font.HELVETICA, 12, Font.NORMAL, Color.DARK_GRAY);
 
-            Paragraph seccion1 = new Paragraph("Datos del pasajero", seccionFont);
-            seccion1.setSpacingAfter(8);
-            document.add(seccion1);
+                Paragraph seccion1 = new Paragraph("Datos del pasajero", seccionFont);
+                seccion1.setSpacingAfter(8);
+                document.add(seccion1);
 
-            PdfPTable tablaPasajero = new PdfPTable(2);
-            tablaPasajero.setWidthPercentage(100);
-            tablaPasajero.setSpacingAfter(15);
+                PdfPTable tablaPasajero = new PdfPTable(2);
+                tablaPasajero.setWidthPercentage(100);
+                tablaPasajero.setSpacingAfter(15);
 
-            addRow(tablaPasajero, "Nombre:", tiquete.getPasajero().getNombres(), textoFont);
-            addRow(tablaPasajero, "Documento:", tiquete.getPasajero().getNumeroDocumento(), textoFont);
-            addRow(tablaPasajero, "Correo:", tiquete.getPasajero().getEmail(), textoFont);
-            document.add(tablaPasajero);
+                addRow(tablaPasajero, "Nombre:", pasajero.getNombres(), textoFont);
+                addRow(tablaPasajero, "Documento:", pasajero.getNumeroDocumento(), textoFont);
+                addRow(tablaPasajero, "Correo:", pasajero.getEmail(), textoFont);
+                document.add(tablaPasajero);
 
-            Paragraph seccion2 = new Paragraph("Detalles del vuelo", seccionFont);
-            seccion2.setSpacingAfter(8);
-            document.add(seccion2);
+                Paragraph seccion2 = new Paragraph("Detalles del vuelo", seccionFont);
+                seccion2.setSpacingAfter(8);
+                document.add(seccion2);
 
-            PdfPTable tablaVuelo = new PdfPTable(2);
-            tablaVuelo.setWidthPercentage(100);
-            tablaVuelo.setSpacingAfter(20);
+                PdfPTable tablaVuelo = new PdfPTable(2);
+                tablaVuelo.setWidthPercentage(100);
+                tablaVuelo.setSpacingAfter(20);
 
-            LocalDateTime fechaSalida = tiquete.getVuelo().getFechaSalida();
-            Locale localeColombia = new Locale("es", "CO");
+                LocalDateTime fechaSalida = reserva.getTiquetes().getFirst().getVuelo().getFechaSalida();
+                Locale localeColombia = new Locale("es", "CO");
 
-            DateTimeFormatter formatterFecha = DateTimeFormatter.ofPattern("EEEE d 'de' MMMM 'de' yyyy", localeColombia);
-            String fechaFormateada = fechaSalida.format(formatterFecha);
+                DateTimeFormatter formatterFecha = DateTimeFormatter.ofPattern("EEEE d 'de' MMMM 'de' yyyy", localeColombia);
+                String fechaFormateada = fechaSalida.format(formatterFecha);
 
-            DateTimeFormatter formatterHora = DateTimeFormatter.ofPattern("hh:mm a", localeColombia);
-            String horaFormateada = fechaSalida.format(formatterHora);
+                DateTimeFormatter formatterHora = DateTimeFormatter.ofPattern("hh:mm a", localeColombia);
+                String horaFormateada = fechaSalida.format(formatterHora);
 
-            NumberFormat formatoMoneda = NumberFormat.getCurrencyInstance(localeColombia);
-            String precioFormateado = formatoMoneda.format(tiquete.getVuelo().getPrecio().longValue());
+                NumberFormat formatoMoneda = NumberFormat.getCurrencyInstance(localeColombia);
+                String precioFormateado = formatoMoneda.format(reserva.getTiquetes().getFirst().getVuelo().getPrecio().longValue());
 
-            addRow(tablaVuelo, "Vuelo:", tiquete.getCodigoReserva(), textoFont);
-            addRow(tablaVuelo, "Origen:", tiquete.getVuelo().getOrigen().toString(), textoFont);
-            addRow(tablaVuelo, "Destino:", tiquete.getVuelo().getDestino().toString(), textoFont);
-            addRow(tablaVuelo, "Fecha de salida:", fechaFormateada, textoFont);
-            addRow(tablaVuelo, "Hora de salida:", horaFormateada, textoFont);
-            addRow(tablaVuelo, "Asiento:", tiquete.getAsientoVuelo().getAsiento().getNombre(), textoFont);
-            addRow(tablaVuelo, "Precio:", precioFormateado, textoFont);
-            document.add(tablaVuelo);
+                addRow(tablaVuelo, "Vuelo:", reserva.getCodigoReserva(), textoFont);
+                addRow(tablaVuelo, "Origen:", reserva.getTiquetes().getFirst().getVuelo().getOrigen().toString(), textoFont);
+                addRow(tablaVuelo, "Destino:", reserva.getTiquetes().getFirst().getVuelo().getDestino().toString(), textoFont);
+                addRow(tablaVuelo, "Fecha de salida:", fechaFormateada, textoFont);
+                addRow(tablaVuelo, "Hora de salida:", horaFormateada, textoFont);
+                addRow(tablaVuelo, "Asiento:", reserva.getTiquetes().getFirst().getAsientoVuelo().getAsiento().getNombre(), textoFont);
+                addRow(tablaVuelo, "Precio:", precioFormateado, textoFont);
+                document.add(tablaVuelo);
+            }
 
             // ----- PIE DE PÁGINA -----
             document.add(new Paragraph(" "));
@@ -175,7 +170,6 @@ public class TiqueteImplement implements TiqueteService {
             agradecimiento.setAlignment(Element.ALIGN_CENTER);
             agradecimiento.setSpacingBefore(10);
             document.add(agradecimiento);
-
             document.close();
             return baos.toByteArray();
 
@@ -207,11 +201,6 @@ public class TiqueteImplement implements TiqueteService {
         } catch (Exception e) {
             throw new RuntimeException("Error al generar JSON del tiquete", e);
         }
-    }
-
-    @Override
-    public String generarCodigoReservaUnico() {
-        return "RSV-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 
     private Tiquete crearTiqueteParaPasajero(Pasajero pasajero, Reserva reserva) {

@@ -5,6 +5,7 @@ import com.api.backend.dto.SimulacionPagoRequest;
 import com.api.backend.dto.SimulacionPagoResponse;
 import com.api.backend.entity.Pago;
 import com.api.backend.entity.Reserva;
+import com.api.backend.entity.Vuelo;
 import com.api.backend.repository.PagoRepository;
 import com.api.backend.repository.ReservaRepository;
 import com.api.backend.service.PagoService;
@@ -13,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Random;
 import java.util.UUID;
@@ -52,19 +54,15 @@ public class PagoImplement implements PagoService {
         Reserva reserva = reservaRepository.findById(request.getIdReserva())
             .orElseThrow(() -> new RuntimeException("Reserva no encontrada"));
 
-        // Calcular valor total (simulado - en producción vendría de la reserva)
         Long valorTotal = calcularValorTotal(reserva);
 
-        // Simular procesamiento de pago
-        String estadoPago = generarEstadoPagoSimulado();
-        boolean pagoExitoso = "APROBADO".equals(estadoPago);
 
         // Crear entidad de pago
         Pago pago = new Pago();
         pago.setFecha(LocalDateTime.now());
         pago.setValorAPagar(valorTotal);
         pago.setMetodoPago(request.getMetodoPago());
-        pago.setEstadoPago(estadoPago);
+        pago.setEstadoPago("APROBADO");
         pago.setNombrePagador(request.getNombrePagador());
         pago.setTipoDocumentoPagador(request.getTipoDocumentoPagador());
         pago.setNumeroDocumentoPagador(request.getNumeroDocumentoPagador());
@@ -74,9 +72,7 @@ public class PagoImplement implements PagoService {
 
         Pago pagoGuardado = pagoRepository.save(pago);
 
-        // Preparar respuesta
-        response.setExitoso(pagoExitoso);
-        response.setMensaje(pagoExitoso ? "Pago aprobado exitosamente" : "Pago rechazado");
+
         response.setCodigoTransaccion(UUID.randomUUID().toString());
         response.setPago(modelMapper.map(pagoGuardado, PagoDTO.class));
 
@@ -97,16 +93,12 @@ public class PagoImplement implements PagoService {
         return request.isTerminosAceptados();
     }
 
-    @Override
-    public String generarEstadoPagoSimulado() {
-        // Simulación: 80% de probabilidad de éxito
-        Random random = new Random();
-        return random.nextInt(100) < 80 ? "APROBADO" : "RECHAZADO";
-    }
 
     private Long calcularValorTotal(Reserva reserva) {
-        // En una implementación real, esto calcularía el total basado en vuelos, asientos, etc.
-        // Por ahora, retornamos un valor simulado
-        return 500000L; // $500.000 COP
+        Vuelo vuelo = reserva.getTiquetes().getFirst().getVuelo();
+        int numeroPasajeros = reserva.getPasajeros().size();
+        BigDecimal totalAPagar = vuelo.getPrecio().multiply(BigDecimal.valueOf(numeroPasajeros));
+
+        return totalAPagar.longValue();
     }
 }

@@ -15,6 +15,4 @@ public interface TiqueteService {
     byte[] descargarTiquetePDF(Long idTiquete);
 
     String descargarTiqueteJSON(Long idTiquete);
-
-    String generarCodigoReservaUnico();
 }

@@ -25,6 +25,8 @@ public class PasajeroDTO {
 
     private String telefono;
 
+    private String email;
+
     private boolean infante;
 
 }

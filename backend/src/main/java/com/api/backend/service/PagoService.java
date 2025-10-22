@@ -10,6 +10,4 @@ public interface PagoService {
     boolean validarDatosPagador(SimulacionPagoRequest request);
 
     boolean validarTerminos(SimulacionPagoRequest request);
-
-    String generarEstadoPagoSimulado();
 }
