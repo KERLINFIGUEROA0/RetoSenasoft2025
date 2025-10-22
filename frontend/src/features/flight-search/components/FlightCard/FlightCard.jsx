@@ -32,7 +32,7 @@ const FlightCard = ({ vuelo, onSelect }) => {
           className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium cursor-pointer transition-colors hover:bg-blue-700"
           onClick={() => onSelect(vuelo)}
         >
-          Seleccionar Vuelo
+          Reservar
         </button>
       </div>
     </div>

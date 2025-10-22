@@ -46,7 +46,7 @@ export const mockVuelos = [
     precio: 150000,
     modeloAvion: 'Boeing 737',
     capacidadAvion: 150,
-    asientosDisponibles: 15
+    asientosDisponibles: 75
   },
   {
     idVuelo: 2,
@@ -57,7 +57,7 @@ export const mockVuelos = [
     precio: 180000,
     modeloAvion: 'Airbus A320',
     capacidadAvion: 180,
-    asientosDisponibles: 25
+    asientosDisponibles: 90
   },
   {
     idVuelo: 3,
@@ -68,6 +68,32 @@ export const mockVuelos = [
     precio: 120000,
     modeloAvion: 'Boeing 737',
     capacidadAvion: 150,
-    asientosDisponibles: 8
+    asientosDisponibles: 60
   }
 ];
+
+// Función para generar asientos mock disponibles
+export const generarAsientosMock = (vueloId, capacidadAvion, asientosDisponibles) => {
+  const asientos = [];
+  let asientosGenerados = 0;
+
+  // Generar asientos disponibles (al menos 5 para pruebas)
+  const minAsientosDisponibles = Math.max(5, Math.floor(asientosDisponibles * 0.8));
+
+  for (let numeroAsiento = 1; numeroAsiento <= capacidadAvion && asientosGenerados < minAsientosDisponibles; numeroAsiento++) {
+    // Hacer disponibles al menos los primeros 5 asientos de cada fila para pruebas
+    const disponible = numeroAsiento <= minAsientosDisponibles ||
+                      (numeroAsiento % 6 === 1 || numeroAsiento % 6 === 2 || numeroAsiento % 6 === 3);
+
+    asientos.push({
+      idAsientoVuelo: `${vueloId}-${numeroAsiento}`,
+      numeroAsiento: numeroAsiento,
+      disponible: disponible,
+      precio: disponible ? mockVuelos.find(v => v.idVuelo === vueloId)?.precio || 150000 : null
+    });
+
+    if (disponible) asientosGenerados++;
+  }
+
+  return asientos;
+};
