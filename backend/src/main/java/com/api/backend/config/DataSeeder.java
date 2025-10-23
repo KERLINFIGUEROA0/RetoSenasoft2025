@@ -108,24 +108,28 @@ public class DataSeeder implements CommandLineRunner {
     private List<Avion> crearAviones() {
         List<Avion> aviones = new ArrayList<>();
 
+        // Avión 1: Capacidad máxima (180 / 6 = 30 filas)
         Avion avion1 = new Avion();
-        avion1.setModelo("Boeing 737-800");
-        avion1.setCapacidad(189);
+        avion1.setModelo("Airbus A320");
+        avion1.setCapacidad(180); // Máxima capacidad solicitada
         aviones.add(avionRepository.save(avion1));
 
+        // Avión 2: Capacidad media (144 / 6 = 24 filas)
         Avion avion2 = new Avion();
-        avion2.setModelo("Airbus A320");
-        avion2.setCapacidad(180);
+        avion2.setModelo("Boeing 737-700");
+        avion2.setCapacidad(144);
         aviones.add(avionRepository.save(avion2));
 
+        // Avión 3: Capacidad media-baja (120 / 6 = 20 filas)
         Avion avion3 = new Avion();
-        avion3.setModelo("Boeing 787 Dreamliner");
-        avion3.setCapacidad(242);
+        avion3.setModelo("Embraer E195");
+        avion3.setCapacidad(120); // Capacidad sugerida
         aviones.add(avionRepository.save(avion3));
-
+        
+        // Avión 4: Capacidad pequeña (84 / 6 = 14 filas)
         Avion avion4 = new Avion();
-        avion4.setModelo("Airbus A319");
-        avion4.setCapacidad(144);
+        avion4.setModelo("ATR 72");
+        avion4.setCapacidad(84); // Cercano a 80, pero divisible por 6
         aviones.add(avionRepository.save(avion4));
 
         return aviones;
@@ -133,6 +137,7 @@ public class DataSeeder implements CommandLineRunner {
 
     private void crearAsientos(List<Avion> aviones) {
         for (Avion avion : aviones) {
+            // La lógica existente funciona bien si la capacidad es múltiplo de 6
             int filas = avion.getCapacidad() / 6; // 6 asientos por fila (A-F)
             String[] letras = {"A", "B", "C", "D", "E", "F"};
 
@@ -156,82 +161,82 @@ public class DataSeeder implements CommandLineRunner {
         vuelos.add(crearVuelo(CiudadesEnum.BOGOTA, CiudadesEnum.MEDELLIN,
                 ahora.plusDays(5).withHour(6).withMinute(0),
                 ahora.plusDays(5).withHour(7).withMinute(15),
-                new BigDecimal("180000"), aviones.get(0)));
+                new BigDecimal("180000"), aviones.get(0))); // Avion grande (180)
 
         vuelos.add(crearVuelo(CiudadesEnum.BOGOTA, CiudadesEnum.CALI,
                 ahora.plusDays(5).withHour(8).withMinute(30),
                 ahora.plusDays(5).withHour(9).withMinute(30),
-                new BigDecimal("165000"), aviones.get(1)));
+                new BigDecimal("165000"), aviones.get(1))); // Avion mediano (144)
 
         vuelos.add(crearVuelo(CiudadesEnum.BOGOTA, CiudadesEnum.CARTAGENA,
                 ahora.plusDays(6).withHour(10).withMinute(0),
                 ahora.plusDays(6).withHour(11).withMinute(45),
-                new BigDecimal("250000"), aviones.get(2)));
+                new BigDecimal("250000"), aviones.get(0))); // Avion grande (180)
 
         vuelos.add(crearVuelo(CiudadesEnum.BOGOTA, CiudadesEnum.BARRANQUILLA,
                 ahora.plusDays(6).withHour(14).withMinute(0),
                 ahora.plusDays(6).withHour(15).withMinute(50),
-                new BigDecimal("235000"), aviones.get(3)));
+                new BigDecimal("235000"), aviones.get(2))); // Avion mediano-bajo (120)
 
         // Vuelos desde Medellín
         vuelos.add(crearVuelo(CiudadesEnum.MEDELLIN, CiudadesEnum.BOGOTA,
                 ahora.plusDays(7).withHour(9).withMinute(0),
                 ahora.plusDays(7).withHour(10).withMinute(15),
-                new BigDecimal("180000"), aviones.get(0)));
+                new BigDecimal("180000"), aviones.get(0))); // Avion grande (180)
 
         vuelos.add(crearVuelo(CiudadesEnum.MEDELLIN, CiudadesEnum.CARTAGENA,
                 ahora.plusDays(7).withHour(11).withMinute(30),
                 ahora.plusDays(7).withHour(12).withMinute(45),
-                new BigDecimal("220000"), aviones.get(1)));
+                new BigDecimal("220000"), aviones.get(1))); // Avion mediano (144)
 
         vuelos.add(crearVuelo(CiudadesEnum.MEDELLIN, CiudadesEnum.CALI,
                 ahora.plusDays(8).withHour(15).withMinute(0),
                 ahora.plusDays(8).withHour(16).withMinute(0),
-                new BigDecimal("195000"), aviones.get(2)));
+                new BigDecimal("195000"), aviones.get(2))); // Avion mediano-bajo (120)
 
         // Vuelos desde Cali
         vuelos.add(crearVuelo(CiudadesEnum.CALI, CiudadesEnum.BOGOTA,
                 ahora.plusDays(8).withHour(7).withMinute(0),
                 ahora.plusDays(8).withHour(8).withMinute(0),
-                new BigDecimal("165000"), aviones.get(3)));
+                new BigDecimal("165000"), aviones.get(3))); // Avion pequeño (84)
 
         vuelos.add(crearVuelo(CiudadesEnum.CALI, CiudadesEnum.CARTAGENA,
                 ahora.plusDays(9).withHour(13).withMinute(30),
                 ahora.plusDays(9).withHour(15).withMinute(0),
-                new BigDecimal("245000"), aviones.get(0)));
+                new BigDecimal("245000"), aviones.get(0))); // Avion grande (180)
 
         // Vuelos desde Cartagena
         vuelos.add(crearVuelo(CiudadesEnum.CARTAGENA, CiudadesEnum.BOGOTA,
                 ahora.plusDays(9).withHour(16).withMinute(0),
                 ahora.plusDays(9).withHour(17).withMinute(45),
-                new BigDecimal("250000"), aviones.get(1)));
+                new BigDecimal("250000"), aviones.get(1))); // Avion mediano (144)
 
         vuelos.add(crearVuelo(CiudadesEnum.CARTAGENA, CiudadesEnum.MEDELLIN,
                 ahora.plusDays(10).withHour(8).withMinute(0),
                 ahora.plusDays(10).withHour(9).withMinute(15),
-                new BigDecimal("220000"), aviones.get(2)));
+                new BigDecimal("220000"), aviones.get(2))); // Avion mediano-bajo (120)
 
         // Vuelos desde Barranquilla
         vuelos.add(crearVuelo(CiudadesEnum.BARRANQUILLA, CiudadesEnum.BOGOTA,
                 ahora.plusDays(10).withHour(12).withMinute(0),
                 ahora.plusDays(10).withHour(13).withMinute(50),
-                new BigDecimal("235000"), aviones.get(3)));
+                new BigDecimal("235000"), aviones.get(3))); // Avion pequeño (84)
 
         vuelos.add(crearVuelo(CiudadesEnum.BARRANQUILLA, CiudadesEnum.MEDELLIN,
                 ahora.plusDays(11).withHour(14).withMinute(30),
                 ahora.plusDays(11).withHour(15).withMinute(45),
-                new BigDecimal("210000"), aviones.get(0)));
+                new BigDecimal("210000"), aviones.get(0))); // Avion grande (180)
 
         // Vuelos adicionales para más opciones
         vuelos.add(crearVuelo(CiudadesEnum.BOGOTA, CiudadesEnum.MEDELLIN,
                 ahora.plusDays(5).withHour(18).withMinute(0),
                 ahora.plusDays(5).withHour(19).withMinute(15),
-                new BigDecimal("195000"), aviones.get(1)));
+                new BigDecimal("195000"), aviones.get(1))); // Avion mediano (144)
 
         vuelos.add(crearVuelo(CiudadesEnum.BOGOTA, CiudadesEnum.CALI,
                 ahora.plusDays(6).withHour(19).withMinute(30),
                 ahora.plusDays(6).withHour(20).withMinute(30),
-                new BigDecimal("175000"), aviones.get(2)));
+                new BigDecimal("175000"), aviones.get(2))); // Avion mediano-bajo (120)
 
         return vuelos;
     }

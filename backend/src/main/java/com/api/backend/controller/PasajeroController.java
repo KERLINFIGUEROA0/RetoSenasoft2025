@@ -36,7 +36,7 @@ public class PasajeroController {
     /**
      * Obtener pasajero por ID
      */
-    @GetMapping("/{id}")
+    @GetMapping("/obtener/{id}")
     public ResponseEntity<PasajeroDTO> obtenerPasajeroPorId(@PathVariable Long id) {
         try {
             PasajeroDTO pasajero = pasajeroService.buscarPorId(id);

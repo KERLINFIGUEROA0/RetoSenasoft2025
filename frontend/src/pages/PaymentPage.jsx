@@ -10,7 +10,7 @@ const PaymentPage = () => {
   const location = useLocation();
   const { selectedSeats, passengers, reservaId } = location.state || {};
 
-  const handlePaymentSuccess = async () => {
+  const handlePaymentSuccess = async (paymentData) => {
     try {
       // Obtener reservaId del localStorage si no viene en state
       const idReserva = reservaId || localStorage.getItem('reservaId');
@@ -20,20 +20,13 @@ const PaymentPage = () => {
         return;
       }
 
-      // Preparar datos del pago
-      const paymentData = {
+      // Agregar idReserva a los datos de pago
+      const requestData = {
         idReserva: parseInt(idReserva),
-        metodoPago: 'TARJETA_CREDITO', // Por defecto, se puede cambiar según el formulario
-        nombrePagador: 'Usuario de Prueba', // Esto debería venir del formulario
-        tipoDocumentoPagador: 'CC',
-        numeroDocumentoPagador: '123456789',
-        correoPagador: 'usuario@email.com',
-        telefonoPagador: '3001234567',
-        aceptaTerminos: true
+        ...paymentData
       };
 
-      // Enviar pago al backend
-      const response = await axios.post(`${API_BASE_URL}/pagos/simular`, paymentData, {
+      const response = await axios.post(`${API_BASE_URL}/pagos/simular`, requestData, {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',

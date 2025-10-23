@@ -32,6 +32,7 @@ public class TiqueteController {
             return ResponseEntity.ok(tiquetes);
         } catch (RuntimeException e) {
             System.out.println(e.getMessage());
+            System.out.println(e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }

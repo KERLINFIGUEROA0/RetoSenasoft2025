@@ -43,12 +43,7 @@ public class PagoImplement implements PagoService {
             return response;
         }
 
-        // Validar datos del pagador
-        if (!validarDatosPagador(request)) {
-            response.setExitoso(false);
-            response.setMensaje("Datos del pagador incompletos o inválidos");
-            return response;
-        }
+
 
         // Obtener la reserva
         Reserva reserva = reservaRepository.findById(request.getIdReserva())
@@ -63,9 +58,6 @@ public class PagoImplement implements PagoService {
         pago.setValorAPagar(valorTotal);
         pago.setMetodoPago(request.getMetodoPago());
         pago.setEstadoPago("APROBADO");
-        pago.setNombrePagador(request.getNombrePagador());
-        pago.setTipoDocumentoPagador(request.getTipoDocumentoPagador());
-        pago.setNumeroDocumentoPagador(request.getNumeroDocumentoPagador());
         pago.setCorreoPagador(request.getCorreoPagador());
         pago.setTelefonoPagador(request.getTelefonoPagador());
         pago.setReserva(reserva);
@@ -79,14 +71,6 @@ public class PagoImplement implements PagoService {
         return response;
     }
 
-    @Override
-    public boolean validarDatosPagador(SimulacionPagoRequest request) {
-        return request.getNombrePagador() != null && !request.getNombrePagador().trim().isEmpty() &&
-               request.getTipoDocumentoPagador() != null && !request.getTipoDocumentoPagador().trim().isEmpty() &&
-               request.getNumeroDocumentoPagador() != null && !request.getNumeroDocumentoPagador().trim().isEmpty() &&
-               request.getCorreoPagador() != null && !request.getCorreoPagador().trim().isEmpty() &&
-               request.getTelefonoPagador() != null && !request.getTelefonoPagador().trim().isEmpty();
-    }
 
     @Override
     public boolean validarTerminos(SimulacionPagoRequest request) {

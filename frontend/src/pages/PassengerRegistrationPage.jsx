@@ -55,9 +55,9 @@ const PassengerRegistrationPage = () => {
         genero: '',
         tipoDocumento: '',
         numeroDocumento: '',
-        celular: '',
-        correo: '',
-        esInfante: false,
+        telefono: '',
+        email: '',
+        infante: false,
         // CAMBIO: Asigna asiento solo si el índice es menor que la cantidad de adultos
         asientoAsignado: index < adultos ? asientoAsignadoVisual : null
       };
@@ -86,12 +86,12 @@ const PassengerRegistrationPage = () => {
       if (!pasajero.genero) errores.push(`Pasajero ${index + 1}: Género requerido`);
       if (!pasajero.tipoDocumento) errores.push(`Pasajero ${index + 1}: Tipo de documento requerido`);
       if (!pasajero.numeroDocumento.trim()) errores.push(`Pasajero ${index + 1}: Número de documento requerido`);
-      if (!pasajero.celular.trim()) errores.push(`Pasajero ${index + 1}: Celular requerido`);
-      if (!pasajero.correo.trim()) errores.push(`Pasajero ${index + 1}: Correo requerido`);
+      if (!pasajero.telefono.trim()) errores.push(`Pasajero ${index + 1}: Teléfono requerido`);
+      if (!pasajero.email.trim()) errores.push(`Pasajero ${index + 1}: Correo electrónico requerido`);
 
       // ... (Validación email (línea 91)) ...
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (pasajero.correo && !emailRegex.test(pasajero.correo)) {
+      if (pasajero.email && !emailRegex.test(pasajero.email)) {
         errores.push(`Pasajero ${index + 1}: Correo electrónico inválido`);
       }
 
@@ -109,10 +109,10 @@ const PassengerRegistrationPage = () => {
         }
         
         // (Validaciones de consistencia (líneas 100-105))
-        if (pasajero.esInfante && !esMenor3) {
+        if (pasajero.infante && !esMenor3) {
           errores.push(`Pasajero ${index + 1}: La fecha de nacimiento no corresponde a un infante`);
         }
-        if (!pasajero.esInfante && esMenor3) {
+        if (!pasajero.infante && esMenor3) {
           errores.push(`Pasajero ${index + 1}: La fecha de nacimiento corresponde a un infante`);
         }
       }
@@ -141,9 +141,9 @@ const PassengerRegistrationPage = () => {
     setError('');
 
     try {
-      // Preparar datos para enviar al backend
+      // Preparar datos para enviar al backend - formato correcto para RegistroPasajerosRequest
       const registroData = {
-        idVuelo: vueloSeleccionado.idVuelo,
+        idReserva: null, // Se genera en el backend
         pasajeros: pasajeros.map(pasajero => ({
           primerApellido: pasajero.primerApellido,
           segundoApellido: pasajero.segundoApellido,
@@ -152,15 +152,14 @@ const PassengerRegistrationPage = () => {
           genero: pasajero.genero,
           tipoDocumento: pasajero.tipoDocumento,
           numeroDocumento: pasajero.numeroDocumento,
-          celular: pasajero.celular,
-          correo: pasajero.correo,
-          esInfante: pasajero.esInfante
-        })),
-        asientosSeleccionados: asientosSeleccionados.map(asiento => asiento.idAsientoVuelo)
+          telefono: pasajero.telefono, // Campo correcto según PasajeroDTO
+          email: pasajero.email, // Campo correcto según PasajeroDTO
+          infante: pasajero.infante // Campo correcto según PasajeroDTO
+        }))
       };
 
       // Enviar al backend usando Axios
-      const response = await axios.post(`${API_BASE_URL}/pasajeros/registrar`, registroData, {
+      const response = await axios.post(`${API_BASE_URL}/reservas/`, registroData, {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -172,11 +171,27 @@ const PassengerRegistrationPage = () => {
       localStorage.setItem('passengerRegistration', JSON.stringify(response.data));
       localStorage.setItem('reservaId', response.data.idReserva);
 
+      // Crear reserva después de registrar pasajeros
+      const reservaData = {
+        pasajeros: response.data // Lista de PasajeroDTO
+      };
+
+      const reservaResponse = await axios.post(`${API_BASE_URL}/reservas/`, reservaData, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        withCredentials: true
+      });
+
+      // Guardar ID de la reserva creada
+      localStorage.setItem('reservaCreadaId', reservaResponse.data.idReserva);
+
       navigate('/payment', {
         state: {
           selectedSeats: asientosSeleccionados,
-          passengers: response.data.pasajeros,
-          reservaId: response.data.idReserva
+          passengers: response.data,
+          reservaId: reservaResponse.data.idReserva
         }
       });
 

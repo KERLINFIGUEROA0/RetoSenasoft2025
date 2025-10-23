@@ -17,7 +17,7 @@ const PassengerForm = ({ pasajero, index, onUpdate }) => {
       const edad = hoy.getFullYear() - fechaNacimiento.getFullYear();
       const esMenor3 = edad < 3 || (edad === 3 && hoy < new Date(fechaNacimiento.getFullYear() + 3, fechaNacimiento.getMonth(), fechaNacimiento.getDate()));
 
-      newData.esInfante = esMenor3;
+      newData.infante = esMenor3;
     }
 
     setFormData(newData);
@@ -35,7 +35,7 @@ const PassengerForm = ({ pasajero, index, onUpdate }) => {
             </span>
           )}
         </h2>
-        {formData.esInfante && (
+        {formData.infante && (
           <span className="px-3 py-1 bg-orange-100 text-orange-800 text-sm rounded-full">
             Infante (menor de 3 años)
           </span>
@@ -160,8 +160,8 @@ const PassengerForm = ({ pasajero, index, onUpdate }) => {
           </label>
           <input
             type="tel"
-            value={formData.celular}
-            onChange={(e) => handleChange('celular', e.target.value)}
+            value={formData.telefono}
+            onChange={(e) => handleChange('telefono', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             placeholder="Ingrese el número de celular"
             required
@@ -174,8 +174,8 @@ const PassengerForm = ({ pasajero, index, onUpdate }) => {
           </label>
           <input
             type="email"
-            value={formData.correo}
-            onChange={(e) => handleChange('correo', e.target.value)}
+            value={formData.email}
+            onChange={(e) => handleChange('email', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             placeholder="correo@ejemplo.com"
             required
@@ -184,7 +184,7 @@ const PassengerForm = ({ pasajero, index, onUpdate }) => {
       </div>
 
       {/* Información adicional para infantes */}
-      {formData.esInfante && (
+      {formData.infante && (
         <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
           <p className="text-sm text-orange-800">
             <strong>Nota:</strong> Este pasajero es considerado infante (menor de 3 años).

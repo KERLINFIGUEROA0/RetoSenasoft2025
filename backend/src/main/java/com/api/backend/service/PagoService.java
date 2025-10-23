@@ -7,7 +7,5 @@ public interface PagoService {
 
     SimulacionPagoResponse simularPago(SimulacionPagoRequest request);
 
-    boolean validarDatosPagador(SimulacionPagoRequest request);
-
     boolean validarTerminos(SimulacionPagoRequest request);
 }

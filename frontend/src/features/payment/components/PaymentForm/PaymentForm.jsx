@@ -55,19 +55,20 @@ const PaymentForm = ({ selectedSeats, passengers, onPaymentSuccess }) => {
 
     setIsProcessing(true);
 
-    // Simular procesamiento de pago
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000)); // 2 segundos de simulación
+      // Construir objeto de pago con datos reales
+      const paymentData = {
+        metodoPago: paymentMethod === 'pse' ? 'PSE' : 'TARJETA_CREDITO',
+        nombrePagador: passengers?.[0]?.nombre || '',
+        tipoDocumentoPagador: passengers?.[0]?.tipoDocumento || '',
+        numeroDocumentoPagador: passengers?.[0]?.numeroDocumento || '',
+        correoPagador: formData.email,
+        telefonoPagador: formData.phone,
+        terminosAceptados: formData.acceptTerms
+      };
 
-      // Simular respuesta exitosa (90% de éxito)
-      const isSuccess = Math.random() > 0.1;
-
-      if (isSuccess) {
-        alert('Pago procesado exitosamente');
-        onPaymentSuccess();
-      } else {
-        alert('Error en el procesamiento del pago. Inténtalo nuevamente.');
-      }
+      // Pasar los datos al callback para que PaymentPage los envíe al backend
+      await onPaymentSuccess(paymentData);
     } catch (error) {
       alert('Error en el procesamiento del pago');
     } finally {
