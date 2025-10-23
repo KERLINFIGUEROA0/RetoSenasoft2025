@@ -29,7 +29,7 @@ public class AsientoVueloImplement implements AsientoVueloService {
 
     @Override
     public List<AsientoVueloDTO> obtenerAsientosDisponibles(Long idVuelo) {
-        List<AsientoVuelo> asientos = asientoVueloRepository.findByVueloAndDisponibleTrue(vueloRepository.findById(idVuelo).orElseThrow());
+        List<AsientoVuelo> asientos = asientoVueloRepository.findByVueloAndDisponible(vueloRepository.findById(idVuelo).orElseThrow(), true);
         return asientos.stream()
             .map(asiento -> {
                 AsientoVueloDTO dto = modelMapper.map(asiento, AsientoVueloDTO.class);

@@ -158,8 +158,36 @@ const PassengerRegistrationPage = () => {
         }))
       };
 
-      // Enviar al backend usando Axios
-      const response = await axios.post(`${API_BASE_URL}/reservas/`, registroData, {
+      // Primero iniciar la reserva para obtener idReserva
+      const iniciarReservaResponse = await axios.post(`${API_BASE_URL}/reservas/iniciar`, {}, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        withCredentials: true
+      });
+
+      const idReserva = iniciarReservaResponse.data.idReserva;
+
+      // Preparar datos con idReserva para registrar pasajeros
+      const registroDataConReserva = {
+        idReserva: idReserva,
+        pasajeros: pasajeros.map(pasajero => ({
+          primerApellido: pasajero.primerApellido,
+          segundoApellido: pasajero.segundoApellido,
+          nombres: pasajero.nombres,
+          fechaNacimiento: pasajero.fechaNacimiento,
+          genero: pasajero.genero,
+          tipoDocumento: pasajero.tipoDocumento,
+          numeroDocumento: pasajero.numeroDocumento,
+          telefono: pasajero.telefono,
+          email: pasajero.email,
+          infante: pasajero.infante
+        }))
+      };
+
+      // Registrar pasajeros con la reserva
+      const response = await axios.post(`${API_BASE_URL}/pasajeros/registrar`, registroDataConReserva, {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -169,29 +197,13 @@ const PassengerRegistrationPage = () => {
 
       // Guardar respuesta del backend
       localStorage.setItem('passengerRegistration', JSON.stringify(response.data));
-      localStorage.setItem('reservaId', response.data.idReserva);
-
-      // Crear reserva después de registrar pasajeros
-      const reservaData = {
-        pasajeros: response.data // Lista de PasajeroDTO
-      };
-
-      const reservaResponse = await axios.post(`${API_BASE_URL}/reservas/`, reservaData, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        withCredentials: true
-      });
-
-      // Guardar ID de la reserva creada
-      localStorage.setItem('reservaCreadaId', reservaResponse.data.idReserva);
+      localStorage.setItem('reservaId', idReserva);
 
       navigate('/payment', {
         state: {
           selectedSeats: asientosSeleccionados,
           passengers: response.data,
-          reservaId: reservaResponse.data.idReserva
+          reservaId: idReserva
         }
       });
 

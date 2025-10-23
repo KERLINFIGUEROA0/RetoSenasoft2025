@@ -26,13 +26,11 @@ public class TiqueteController {
      * Genera tiquetes electrónicos para una reserva confirmada
      */
     @PostMapping("/generar")
-    public ResponseEntity<List<?>> generarTiquetes(@RequestBody @Valid GenerarTiqueteRequest request) {
+    public ResponseEntity<List<TiqueteDTO>> generarTiquetes(@RequestBody @Valid GenerarTiqueteRequest request) {
         try {
-            List<TiqueteDTO> tiquetes = tiqueteService.generarTiquetes(request.getIdReserva());
+            List<TiqueteDTO> tiquetes = tiqueteService.generarTiquetes(request);
             return ResponseEntity.ok(tiquetes);
         } catch (RuntimeException e) {
-            System.out.println(e.getMessage());
-            System.out.println(e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }
@@ -52,7 +50,7 @@ public class TiqueteController {
     }
 
     /**
-     * RF05.3 - Descargar Tiquete en PDF
+     * RF05.3 - Descargar Tiquete Individual en PDF
      */
     @GetMapping("/{idTiquete}/pdf")
     public ResponseEntity<?> descargarTiquetePDF(@PathVariable Long idTiquete) {
@@ -63,7 +61,23 @@ public class TiqueteController {
             headers.setContentDispositionFormData("attachment", "tiquete-" + idTiquete + ".pdf");
             return ResponseEntity.ok().headers(headers).body(pdfContent);
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error: ", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * RF05.3 - Descargar Reserva Completa en PDF
+     */
+    @GetMapping("/reserva/{idReserva}/pdf")
+    public ResponseEntity<?> descargarReservaPDF(@PathVariable Long idReserva) {
+        try {
+            byte[] pdfContent = tiqueteService.descargarReservaPDF(idReserva);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("attachment", "reserva-" + idReserva + ".pdf");
+            return ResponseEntity.ok().headers(headers).body(pdfContent);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
@@ -79,7 +93,7 @@ public class TiqueteController {
             headers.setContentDispositionFormData("attachment", "tiquete-" + idTiquete + ".json");
             return ResponseEntity.ok().headers(headers).body(jsonContent);
         } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.badRequest().body("{\"error\": \"" + e.getMessage() + "\"}");
         }
     }
 }

@@ -20,9 +20,10 @@ const PaymentPage = () => {
         return;
       }
 
-      // Agregar idReserva a los datos de pago
+      // Agregar idReserva y idsVuelos a los datos de pago
       const requestData = {
         idReserva: parseInt(idReserva),
+        idsVuelos: selectedSeats?.map(seat => seat.idVuelo).filter(id => id != null) || [],
         ...paymentData
       };
 
@@ -35,10 +36,17 @@ const PaymentPage = () => {
       });
 
       if (response.data.exitoso) {
+        console.log('Pago exitoso, generando tiquetes...');
+        console.log('ID Reserva:', idReserva);
+        console.log('IDs Vuelos:', selectedSeats?.map(seat => seat.idVuelo).filter(id => id != null));
+
         // Generar tiquetes después del pago exitoso
         const tiquetesResponse = await axios.post(`${API_BASE_URL}/tiquetes/generar`, {
-          idReserva: parseInt(idReserva)
+          idReserva: parseInt(idReserva),
+          idsVuelos: selectedSeats?.map(seat => seat.idVuelo).filter(id => id != null) || []
         });
+
+        console.log('Tiquetes generados:', tiquetesResponse.data);
 
         // Navegar a confirmación con datos completos
         navigate('/confirmation', {
@@ -51,6 +59,7 @@ const PaymentPage = () => {
           }
         });
       } else {
+        console.error('Error en el pago:', response.data.mensaje);
         alert('Error en el pago: ' + response.data.mensaje);
       }
     } catch (error) {

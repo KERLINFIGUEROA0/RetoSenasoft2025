@@ -12,20 +12,27 @@ const ConfirmationPage = () => {
   const [confirmacionData, setConfirmacionData] = useState(null);
 
   useEffect(() => {
+    console.log('Cargando confirmación para reservaId:', reservaId);
+    console.log('Datos de location.state:', location.state);
+
     const cargarConfirmacion = async () => {
       try {
         if (reservaId) {
+          console.log('Haciendo petición GET a:', `${API_BASE_URL}/tiquetes/confirmacion/${reservaId}`);
           // Obtener confirmación desde el backend
           const response = await axios.get(`${API_BASE_URL}/tiquetes/confirmacion/${reservaId}`);
+          console.log('Respuesta de confirmación:', response.data);
           setConfirmacionData(response.data);
           setBookingCode(response.data.codigoReserva);
         } else {
+          console.log('No hay reservaId, usando fallback');
           // Fallback si no hay reservaId
           const code = 'AF' + Math.random().toString(36).substr(2, 6).toUpperCase();
           setBookingCode(code);
         }
       } catch (error) {
         console.error('Error cargando confirmación:', error);
+        console.error('Detalles del error:', error.response?.data);
         // Fallback
         const code = 'AF' + Math.random().toString(36).substr(2, 6).toUpperCase();
         setBookingCode(code);
@@ -44,11 +51,23 @@ const ConfirmationPage = () => {
     }, 5000);
   }, [reservaId]);
 
-  const handleDownloadPDF = async () => {
+  const handleDownloadPDFIda = async () => {
     try {
       if (confirmacionData?.tiquetes?.length > 0) {
-        // Descargar PDF del primer tiquete
-        const response = await axios.get(`${API_BASE_URL}/tiquetes/${confirmacionData.tiquetes[0].idTiquete}/pdf`, {
+        // Encontrar tiquete de ida - buscar por ruta BOG→MDE
+        const tiqueteIda = confirmacionData.tiquetes.find(t =>
+          t.vuelo.origen === 'BOGOTA' && t.vuelo.destino === 'MEDELLIN'
+        );
+
+        if (!tiqueteIda) {
+          console.error('Tiquetes disponibles:', confirmacionData.tiquetes);
+          alert('No se encontró tiquete de ida. Verifica que tengas una reserva de ida y vuelta.');
+          return;
+        }
+
+        console.log('Descargando tiquete de ida:', tiqueteIda);
+
+        const response = await axios.get(`${API_BASE_URL}/tiquetes/${tiqueteIda.idTiquete}/pdf`, {
           responseType: 'blob'
         });
 
@@ -56,15 +75,51 @@ const ConfirmationPage = () => {
         const url = window.URL.createObjectURL(new Blob([response.data]));
         const link = document.createElement('a');
         link.href = url;
-        link.setAttribute('download', `tiquete-${bookingCode}.pdf`);
+        link.setAttribute('download', `tiquete-ida-${bookingCode}.pdf`);
         document.body.appendChild(link);
         link.click();
         link.remove();
         window.URL.revokeObjectURL(url);
       }
     } catch (error) {
-      console.error('Error descargando PDF:', error);
-      alert('Error al descargar el PDF. Inténtalo de nuevo.');
+      console.error('Error descargando PDF de ida:', error);
+      alert('Error al descargar el PDF de ida. Inténtalo de nuevo.');
+    }
+  };
+
+  const handleDownloadPDFVuelta = async () => {
+    try {
+      if (confirmacionData?.tiquetes?.length > 0) {
+        // Encontrar tiquete de vuelta - buscar por ruta MDE→BOG
+        const tiqueteVuelta = confirmacionData.tiquetes.find(t =>
+          t.vuelo.origen === 'MEDELLIN' && t.vuelo.destino === 'BOGOTA'
+        );
+
+        if (!tiqueteVuelta) {
+          console.error('Tiquetes disponibles:', confirmacionData.tiquetes);
+          alert('No se encontró tiquete de vuelta. Verifica que tengas una reserva de ida y vuelta.');
+          return;
+        }
+
+        console.log('Descargando tiquete de vuelta:', tiqueteVuelta);
+
+        const response = await axios.get(`${API_BASE_URL}/tiquetes/${tiqueteVuelta.idTiquete}/pdf`, {
+          responseType: 'blob'
+        });
+
+        // Crear enlace de descarga
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `tiquete-vuelta-${bookingCode}.pdf`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error('Error descargando PDF de vuelta:', error);
+      alert('Error al descargar el PDF de vuelta. Inténtalo de nuevo.');
     }
   };
 
@@ -139,37 +194,141 @@ const ConfirmationPage = () => {
             </p>
           </div>
 
-          {/* Detalles de la reserva */}
+          {/* Detalles de los tiquetes */}
           <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">Detalles de su Reserva</h3>
+            <h3 className="text-xl font-bold text-gray-800 mb-4">Detalles de sus Tiquetes</h3>
 
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Información del vuelo */}
-              <div>
-                <h4 className="font-semibold text-gray-700 mb-2">Información del Vuelo</h4>
-                <div className="space-y-2 text-sm">
-                  <p><span className="font-medium">Origen:</span> {selectedSeats[0]?.vuelo?.origen || 'N/A'}</p>
-                  <p><span className="font-medium">Destino:</span> {selectedSeats[0]?.vuelo?.destino || 'N/A'}</p>
-                  <p><span className="font-medium">Fecha:</span> {selectedSeats[0]?.vuelo?.fecha || 'N/A'}</p>
-                  <p><span className="font-medium">Hora:</span> {selectedSeats[0]?.vuelo?.hora || 'N/A'}</p>
-                </div>
-              </div>
+            {confirmacionData?.tiquetes ? (
+              // Agrupar tiquetes por vuelo (ida y vuelta)
+              (() => {
+                const tiquetesPorVuelo = {};
+                confirmacionData.tiquetes.forEach(tiquete => {
+                  const vueloId = tiquete.vuelo?.idVuelo;
+                  if (!tiquetesPorVuelo[vueloId]) {
+                    tiquetesPorVuelo[vueloId] = [];
+                  }
+                  tiquetesPorVuelo[vueloId].push(tiquete);
+                });
 
-              {/* Asientos y pasajeros */}
-              <div>
-                <h4 className="font-semibold text-gray-700 mb-2">Asientos Reservados</h4>
-                <div className="space-y-1">
-                  {selectedSeats.map((seat, index) => (
-                    <div key={index} className="flex justify-between items-center bg-gray-50 p-2 rounded">
-                      <span className="font-medium">Asiento {seat.nombreVisual}</span>
-                      <span className="text-sm text-gray-600">
-                        {passengers[index]?.nombres} {passengers[index]?.primerApellido}
+                return Object.entries(tiquetesPorVuelo).map(([vueloId, tiquetesVuelo], vueloIndex) => (
+                  <div key={vueloId} className="mb-6 last:mb-0">
+                    <h4 className="text-lg font-semibold text-blue-600 mb-3">
+                      {tiquetesVuelo[0]?.vuelo?.origen} → {tiquetesVuelo[0]?.vuelo?.destino}
+                      <span className="text-sm font-normal text-gray-600 ml-2">
+                        ({vueloIndex === 0 ? 'IDA' : 'VUELTA'})
                       </span>
+                    </h4>
+
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      {/* Información del vuelo */}
+                      <div className="grid md:grid-cols-3 gap-4 mb-4">
+                        <div>
+                          <span className="text-sm font-medium text-gray-600">Fecha de Salida:</span>
+                          <p className="text-sm text-gray-800">
+                            {new Date(tiquetesVuelo[0]?.vuelo?.fechaSalida).toLocaleDateString('es-CO', {
+                              weekday: 'long',
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            })}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {new Date(tiquetesVuelo[0]?.vuelo?.fechaSalida).toLocaleTimeString('es-CO', {
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </p>
+                        </div>
+
+                        <div>
+                          <span className="text-sm font-medium text-gray-600">Fecha de Llegada:</span>
+                          <p className="text-sm text-gray-800">
+                            {new Date(tiquetesVuelo[0]?.vuelo?.fechaLlegada).toLocaleDateString('es-CO', {
+                              weekday: 'long',
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            })}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {new Date(tiquetesVuelo[0]?.vuelo?.fechaLlegada).toLocaleTimeString('es-CO', {
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </p>
+                        </div>
+
+                        <div>
+                          <span className="text-sm font-medium text-gray-600">Precio por Persona:</span>
+                          <p className="text-lg font-bold text-green-600">
+                            ${tiquetesVuelo[0]?.vuelo?.precio?.toLocaleString('es-CO')}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Lista de pasajeros para este vuelo */}
+                      <div>
+                        <h5 className="font-medium text-gray-700 mb-2">Pasajeros:</h5>
+                        <div className="space-y-2">
+                          {tiquetesVuelo.map((tiquete, index) => (
+                            <div key={tiquete.idTiquete} className="flex justify-between items-center bg-white p-3 rounded border">
+                              <div className="flex-1">
+                                <p className="font-medium text-gray-800">
+                                  {tiquete.pasajero?.nombres} {tiquete.pasajero?.primerApellido}
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                  Documento: {tiquete.pasajero?.numeroDocumento}
+                                </p>
+                                {tiquete.asientoVuelo && (
+                                  <p className="text-sm text-gray-600">
+                                    Asiento: {tiquete.asientoVuelo.asiento?.nombre}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="text-right">
+                                <p className="text-sm text-gray-600">Precio</p>
+                                <p className="font-bold text-green-600">
+                                  ${tiquete.pago?.valorAPagar?.toLocaleString('es-CO')}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                  ))}
+                  </div>
+                ));
+              })()
+            ) : (
+              // Fallback si no hay datos de confirmación
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Información del vuelo */}
+                <div>
+                  <h4 className="font-semibold text-gray-700 mb-2">Información del Vuelo</h4>
+                  <div className="space-y-2 text-sm">
+                    <p><span className="font-medium">Origen:</span> {selectedSeats[0]?.vuelo?.origen || 'N/A'}</p>
+                    <p><span className="font-medium">Destino:</span> {selectedSeats[0]?.vuelo?.destino || 'N/A'}</p>
+                    <p><span className="font-medium">Fecha:</span> {selectedSeats[0]?.vuelo?.fecha || 'N/A'}</p>
+                    <p><span className="font-medium">Hora:</span> {selectedSeats[0]?.vuelo?.hora || 'N/A'}</p>
+                  </div>
+                </div>
+
+                {/* Asientos y pasajeros */}
+                <div>
+                  <h4 className="font-semibold text-gray-700 mb-2">Asientos Reservados</h4>
+                  <div className="space-y-1">
+                    {selectedSeats.map((seat, index) => (
+                      <div key={index} className="flex justify-between items-center bg-gray-50 p-2 rounded">
+                        <span className="font-medium">Asiento {seat.nombreVisual}</span>
+                        <span className="text-sm text-gray-600">
+                          {passengers[index]?.nombres} {passengers[index]?.primerApellido}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Información importante */}
@@ -197,14 +356,16 @@ const ConfirmationPage = () => {
 
           {/* Botones de acción */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
+
+
             <button
-              onClick={handleDownloadPDF}
-              className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+              onClick={handleDownloadPDFVuelta}
+              className="bg-orange-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-orange-700 transition-colors flex items-center justify-center gap-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
               </svg>
-              Descargar PDF
+              Descargar Tiquete Ida y Vuelta
             </button>
 
             <button

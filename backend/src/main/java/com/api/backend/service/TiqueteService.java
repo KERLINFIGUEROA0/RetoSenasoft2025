@@ -8,11 +8,13 @@ import java.util.List;
 
 public interface TiqueteService {
 
-    List<TiqueteDTO> generarTiquetes(Long idReserva);
+    List<TiqueteDTO> generarTiquetes(GenerarTiqueteRequest request);
 
     ConfirmacionReservaDTO obtenerConfirmacionReserva(Long idReserva);
 
     byte[] descargarTiquetePDF(Long idTiquete);
+
+    byte[] descargarReservaPDF(Long idReserva);
 
     String descargarTiqueteJSON(Long idTiquete);
 }

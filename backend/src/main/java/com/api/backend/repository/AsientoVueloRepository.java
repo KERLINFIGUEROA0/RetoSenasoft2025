@@ -11,7 +11,8 @@ import java.util.List;
 
 @Repository
 public interface AsientoVueloRepository extends JpaRepository<AsientoVuelo, Long> {
-    List<AsientoVuelo> findByVueloAndDisponibleTrue(Vuelo vuelo);
+    List<AsientoVuelo> findByVueloAndDisponible(Vuelo vuelo, boolean disponible);
     long countByVueloAndDisponible(Vuelo vuelo, boolean disponible);
+    long countByVueloAndDisponibleTrue(Vuelo vuelo);
     List<AsientoVuelo> findByVuelo(Vuelo vuelo);
 }

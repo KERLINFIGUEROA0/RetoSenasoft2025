@@ -1,9 +1,6 @@
 package com.api.backend.controller;
 
-import com.api.backend.dto.AsientoVueloDTO;
-import com.api.backend.dto.BusquedaVueloRequest;
-import com.api.backend.dto.SeleccionAsientoRequest;
-import com.api.backend.dto.VueloDTO;
+import com.api.backend.dto.*;
 import com.api.backend.service.AsientoVueloService;
 import com.api.backend.service.VueloService;
 import jakarta.validation.Valid;
@@ -28,10 +25,12 @@ public class VueloController {
      * RF01 - Búsqueda de Vuelos
      * Permite buscar vuelos disponibles según criterios de búsqueda
      */
-    @PostMapping("/")
-    public ResponseEntity<List<VueloDTO>> buscarVuelos(@RequestBody @Valid BusquedaVueloRequest request) {
+    @PostMapping("/buscar")
+    // CAMBIAR TIPO DE RETORNO
+    public ResponseEntity<BusquedaVueloResponse> buscarVuelos(@RequestBody @Valid BusquedaVueloRequest request) {
         try {
-            List<VueloDTO> vuelos = vueloService.buscarVuelos(request);
+            // CAMBIAR TIPO DE VARIABLE
+            BusquedaVueloResponse vuelos = vueloService.buscarVuelos(request);
             return ResponseEntity.ok(vuelos);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();

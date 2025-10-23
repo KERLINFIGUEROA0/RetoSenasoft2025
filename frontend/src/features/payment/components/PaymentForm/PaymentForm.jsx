@@ -59,7 +59,7 @@ const PaymentForm = ({ selectedSeats, passengers, onPaymentSuccess }) => {
       // Construir objeto de pago con datos reales
       const paymentData = {
         metodoPago: paymentMethod === 'pse' ? 'PSE' : 'TARJETA_CREDITO',
-        nombrePagador: passengers?.[0]?.nombre || '',
+        nombrePagador: passengers?.[0]?.nombres + ' ' + passengers?.[0]?.primerApellido || formData.cardholderName || '',
         tipoDocumentoPagador: passengers?.[0]?.tipoDocumento || '',
         numeroDocumentoPagador: passengers?.[0]?.numeroDocumento || '',
         correoPagador: formData.email,

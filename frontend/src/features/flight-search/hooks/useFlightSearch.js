@@ -63,12 +63,14 @@ export const useFlightSearch = () => {
         origen: mapearCiudad(formData.origen),
         destino: mapearCiudad(formData.destino),
         fechaSalida: formData.fechaSalida,
-        cantidadPasajeros: formData.adultos + formData.infantes
+        fechaRegreso: formData.tipoViaje === 'IDA_VUELTA' ? formData.fechaRegreso : null,
+        cantidadPasajeros: formData.adultos + formData.infantes,
+        tipoViaje: formData.tipoViaje
       };
 
       console.log('Enviando request a backend:', requestData);
 
-      const response = await axios.post(`${API_BASE_URL}/vuelos/`, requestData, {
+      const response = await axios.post(`${API_BASE_URL}/vuelos/buscar`, requestData, {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -79,7 +81,21 @@ export const useFlightSearch = () => {
       console.log('Respuesta del backend:', response);
 
       // Usar datos del backend
-      if (response.data && response.data.length > 0) {
+      if (response.data && (response.data.vuelosIda || response.data.vuelosVuelta)) {
+        // Para vuelos de ida y vuelta, combinar ambos arrays
+        const vuelosIda = response.data.vuelosIda || [];
+        const vuelosVuelta = response.data.vuelosVuelta || [];
+        const todosVuelos = [...vuelosIda, ...vuelosVuelta];
+
+        if (todosVuelos.length > 0) {
+          setVuelos(todosVuelos);
+          console.log('Vuelos encontrados:', todosVuelos.length);
+        } else {
+          setVuelos([]);
+          setError('No se encontraron vuelos disponibles para la fecha y ruta seleccionada.');
+        }
+      } else if (response.data && response.data.length > 0) {
+        // Para búsquedas simples (solo ida)
         setVuelos(response.data);
         console.log('Vuelos encontrados:', response.data.length);
       } else {
@@ -88,7 +104,6 @@ export const useFlightSearch = () => {
       }
       console.log('Vuelos del backend:', response.data);
     } catch (err) {
-      console.error('Error al buscar vuelos:', err);
       setError('No se encontraron vuelos disponibles para la fecha y ruta seleccionada.');
       setVuelos([]);
     } finally {

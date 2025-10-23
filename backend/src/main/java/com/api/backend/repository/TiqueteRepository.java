@@ -10,4 +10,6 @@ import java.util.List;
 public interface TiqueteRepository extends JpaRepository<Tiquete, Long> {
 
     List<Tiquete> findByReservaIdReserva(Long idReserva);
+
+    List<Tiquete> findByReservaIdReservaAndPasajeroIdPasajero(Long idReserva, Long idPasajero);
 }

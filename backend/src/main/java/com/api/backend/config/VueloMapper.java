@@ -41,7 +41,7 @@ public class VueloMapper {
 
         // Calcular asientos disponibles
         List<AsientoVuelo> asientosDisponibles = asientoVueloRepository
-                .findByVueloAndDisponibleTrue(vuelo);
+                .findByVueloAndDisponible(vuelo, true);
         dto.setAsientosDisponibles(asientosDisponibles.size());
 
         // Calcular duración del vuelo en minutos

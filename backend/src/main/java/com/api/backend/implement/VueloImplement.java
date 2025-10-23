@@ -2,6 +2,7 @@ package com.api.backend.implement;
 
 import com.api.backend.config.VueloMapper;
 import com.api.backend.dto.BusquedaVueloRequest;
+import com.api.backend.dto.BusquedaVueloResponse;
 import com.api.backend.dto.VueloDTO;
 import com.api.backend.entity.Vuelo;
 import com.api.backend.repository.VueloRepository;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -37,53 +39,51 @@ public class VueloImplement implements VueloService {
 
 
     @Override
-    public List<VueloDTO> buscarVuelos(BusquedaVueloRequest request) {
-        // Construir la especificación combinando múltiples filtros
-        Specification<Vuelo> spec = Specification.allOf(
-                VueloSpecification.conOrigen(request.getOrigen()),
-                VueloSpecification.conDestino(request.getDestino()),
-                VueloSpecification.conFechaSalida(request.getFechaSalida()),
-                VueloSpecification.vuelosFuturos());
-
-        // Aplicar filtros opcionales
-        if (request.getCantidadPasajeros() != null && request.getCantidadPasajeros() > 0) {
-            spec = spec.and(VueloSpecification.conAsientosDisponibles(request.getCantidadPasajeros()));
+    public BusquedaVueloResponse buscarVuelos(BusquedaVueloRequest request) {
+        // 1. Validación de fecha (tu lógica existente está bien)
+        if (!validarFechaBusqueda(request)) {
+            throw new IllegalArgumentException("Fecha de búsqueda inválida. Debe ser desde hoy hasta máximo 2 meses en el futuro.");
         }
 
-        if (request.getPrecioMinimo() != null || request.getPrecioMaximo() != null) {
-            spec = spec.and(VueloSpecification.conRangoPrecios(
-                    request.getPrecioMinimo(),
-                    request.getPrecioMaximo()
-            ));
-        }
+        LocalDateTime ahora = LocalDateTime.now();
+        BusquedaVueloResponse response = new BusquedaVueloResponse();
 
-        // Aplicar ordenamiento
-        if (request.getOrdenarPor() != null) {
-            switch (request.getOrdenarPor().toLowerCase()) {
-                case "precio_asc":
-                    spec = spec.and(VueloSpecification.ordenarPorPrecioAsc());
-                    break;
-                case "precio_desc":
-                    spec = spec.and(VueloSpecification.ordenarPorPrecioDesc());
-                    break;
-                case "duracion":
-                    spec = spec.and(VueloSpecification.ordenarPorDuracion());
-                    break;
-                case "fecha":
-                default:
-                    spec = spec.and(VueloSpecification.ordenarPorFechaSalida());
-                    break;
+        // 2. --- Búsqueda Vuelo Ida ---
+        LocalDateTime fechaSalidaInicio = request.getFechaSalida().atStartOfDay();
+        List<Vuelo> vuelosIda = vueloRepository.findVuelosDisponibles(
+                request.getOrigen(),
+                request.getDestino(),
+                fechaSalidaInicio,
+                ahora
+        );
+        response.setVuelosIda(vuelosIda.stream()
+                .map(this::convertirAVueloDTO)
+                .collect(Collectors.toList()));
+
+        // 3. --- Búsqueda Vuelo Vuelta (si aplica) ---
+        if ("IDA_VUELTA".equals(request.getTipoViaje()) && request.getFechaSalida() != null) {
+
+            // Validación extra para fecha de regreso
+            if (request.getFechaRegreso().isBefore(request.getFechaSalida())) {
+                throw new IllegalArgumentException("La fecha de regreso no puede ser anterior a la fecha de salida.");
             }
+
+            LocalDateTime fechaRegresoInicio = request.getFechaRegreso().atStartOfDay();
+            List<Vuelo> vuelosVuelta = vueloRepository.findVuelosDisponibles(
+                    request.getDestino(), // Origen es el destino de la ida
+                    request.getOrigen(),   // Destino es el origen de la ida
+                    fechaRegresoInicio,
+                    ahora
+            );
+            response.setVuelosVuelta(vuelosVuelta.stream()
+                    .map(this::convertirAVueloDTO)
+                    .collect(Collectors.toList()));
         } else {
-            // Ordenamiento por defecto: por fecha de salida
-            spec = spec.and(VueloSpecification.ordenarPorFechaSalida());
+            // Si no es ida y vuelta, devolvemos una lista vacía
+            response.setVuelosVuelta(Collections.emptyList());
         }
 
-        List<Vuelo> vuelos = vueloRepository.findAll(spec);
-
-        return vuelos.stream()
-                .map(vueloMapper::toDTO)
-                .collect(Collectors.toList());
+        return response;
     }
 
     @Override

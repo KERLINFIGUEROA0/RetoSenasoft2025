@@ -19,6 +19,11 @@ public class BusquedaVueloRequest {
     @NotNull(message = "La fecha de salida es obligatoria")
     private LocalDate fechaSalida;
 
+    private LocalDate fechaRegreso; // Opcional para ida y vuelta
+
+    @NotNull(message = "La fecha de salida es obligatoria")
+    private String tipoViaje;
+
     // Filtros opcionales
     private Integer cantidadPasajeros;
     private BigDecimal precioMaximo;

@@ -87,7 +87,10 @@ const SeatSelectionPage = () => {
 
     // Guardar selección en localStorage o context para la siguiente vista
     localStorage.setItem('selectedFlight', JSON.stringify(vuelo));
-    localStorage.setItem('selectedSeats', JSON.stringify(asientosSeleccionados));
+    localStorage.setItem('selectedSeats', JSON.stringify(asientosSeleccionados.map(asiento => ({
+      ...asiento,
+      idVuelo: vuelo.idVuelo // Agregar idVuelo a cada asiento seleccionado
+    }))));
 
     // Navegar a registro de pasajeros
     navigate('/passengers');
